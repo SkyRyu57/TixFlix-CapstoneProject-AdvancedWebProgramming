@@ -1,59 +1,246 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# **TixFlix – Web-Based Event & Ticketing Management Platform**
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### Final Project – Advanced Web Programming (Semester 4)
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Project Overview
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**TixFlix** is a web-based event management and ticketing platform designed to streamline the entire lifecycle of event creation, ticket sales, transaction processing, and sales analytics within a single integrated system.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+This project was developed as the **Final Project** for the *Advanced Web Programming* course (Semester 4). Although the term *Capstone Project* was used by the course instructor, this project is not a graduation-level capstone. Instead, the term “capstone” reflects the comprehensive and integrative nature of the system, as it combines multiple advanced web development concepts into one cohesive, end-to-end application.
 
-## Learning Laravel
+TixFlix simulates a real-world event ticketing environment, allowing administrators, organizers, and users to interact within a structured, role-based ecosystem.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 2. Project Objectives
 
-## Laravel Sponsors
+The primary objective of this project is to design and implement a full-featured web application that enables:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+* **Administrators** to create and manage events.
+* **Organizers** to monitor ticket sales and event performance.
+* **Users** to register, log in, and purchase tickets.
+* The system to generate secure **e-tickets with QR Codes**.
+* Real-time analytical dashboards for monitoring business performance.
 
-### Premium Partners
+The project emphasizes scalability, security, usability, and real-world workflow simulation.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## 3. System Architecture and Design Approach
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The system is developed using a structured web architecture approach, incorporating:
 
-## Code of Conduct
+* Role-Based Access Control (RBAC)
+* Authentication and authorization mechanisms
+* RESTful API design principles
+* Middleware-based route protection
+* Modular database structure
+* Real-time data processing
+* Integrated reporting and export functionality
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The platform is designed to separate concerns between authentication, event management, ticket processing, payment simulation, and analytics reporting.
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 4. Core Features and Implementation Details
 
-## License
+### 4.1 Authentication & Authorization
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Security is a foundational component of TixFlix.
+
+**Implemented Features:**
+
+* User registration and login
+* Role differentiation: Admin, Organizer, User
+* Password hashing using secure cryptographic algorithms
+* Middleware-based route protection
+
+User passwords are never stored in plain text. Each protected route validates user identity and role before granting access, ensuring that system operations remain secure and controlled.
+
+Access privileges are defined as follows:
+
+* **Admin**: Full event management and system-wide reporting.
+* **Organizer**: Sales monitoring and analytics for assigned events.
+* **User**: Ticket purchasing and transaction history access.
+
+---
+
+### 4.2 Event Management Module
+
+The Event Management module enables administrators to perform full CRUD (Create, Read, Update, Delete) operations.
+
+**Functional Capabilities:**
+
+* Event creation with title, description, and category
+* Banner image upload
+* Event scheduling (date and time)
+* Venue and location specification
+* Ticket quota configuration
+
+Each event includes structured attributes such as total capacity and remaining quota. The system validates event dates to prevent invalid scheduling and ensures quota consistency throughout the ticketing process.
+
+---
+
+### 4.3 Ticketing System
+
+The Ticketing System represents the operational core of TixFlix.
+
+#### Ticket Types
+
+Users can select from multiple ticket categories such as:
+
+* VIP
+* Regular
+* Early Bird
+
+Each ticket type includes:
+
+* Individual pricing
+* Dedicated stock allocation
+* Category-specific attributes
+
+#### Automated Stock Management
+
+Stock is dynamically updated based on transaction status:
+
+* Reduced when payment is successful
+* Restored if payment fails
+* Restricted when quota is reached
+
+This ensures transactional consistency and prevents overselling.
+
+---
+
+### 4.4 E-Ticket Generation with QR Code
+
+Upon successful payment, the system generates a unique electronic ticket containing:
+
+* Unique ticket identification number
+* Event details
+* Buyer information
+* Secure QR Code
+
+The QR Code is encrypted and can be validated through a simulated scanning interface. This prevents duplication and ensures authenticity during event entry simulation.
+
+---
+
+### 4.5 Queue & Waiting List System
+
+If ticket capacity is reached:
+
+* Users may join a waiting list.
+* When a cancellation occurs, available tickets can be reallocated.
+* Allocation follows a first-come, first-served principle.
+
+This mechanism enhances fairness and optimizes ticket distribution.
+
+---
+
+### 4.6 Email Notification System
+
+The system automatically sends:
+
+* Payment confirmation emails
+* E-ticket attachments (including QR Code)
+* Transaction status updates
+
+This feature simulates a production-grade customer communication workflow.
+
+---
+
+### 4.7 Payment Integration (Simulation)
+
+The payment module simulates real transaction flows.
+
+Each transaction may hold one of the following statuses:
+
+* Pending
+* Paid
+* Failed
+
+Transaction flow:
+
+1. User completes checkout.
+2. System assigns pending status.
+3. Payment simulation is executed.
+4. If successful, ticket is generated.
+5. If failed, stock is restored automatically.
+
+Although simulated, this module replicates realistic e-commerce transaction handling logic.
+
+---
+
+### 4.8 Dashboard & Reporting
+
+The analytics module provides real-time business insights.
+
+**Dashboard Features:**
+
+* Total tickets sold
+* Total revenue generated
+* Number of completed transactions
+* Sales trends over time
+* Event performance comparison
+
+**Data Visualization:**
+
+* Transaction charts
+* Revenue graphs
+* Category-based performance metrics
+
+**Export Capabilities:**
+
+* Export reports to Excel
+* Export reports to PDF
+* Date-based filtering for custom reporting
+
+This module demonstrates data processing, aggregation queries, and dynamic chart rendering.
+
+---
+
+## 5. Technical Competencies Demonstrated
+
+This project integrates multiple advanced web programming concepts, including:
+
+* Secure authentication and session handling
+* Password encryption and hashing
+* Middleware implementation
+* File upload handling
+* Email service integration
+* QR Code generation and validation
+* Transaction state management
+* Dynamic dashboard visualization
+* Report generation and export functionality
+* Role-based access control architecture
+* Asynchronous operations handling
+
+The system reflects an intermediate-to-advanced level of full-stack web development capability.
+
+---
+
+## 6. Justification for the “Capstone” Terminology
+
+While formally categorized as a **Final Project** for the Advanced Web Programming course, the term “Capstone Project” was adopted by the course instructor to emphasize the project’s integrative and comprehensive scope.
+
+The terminology is justified because the project:
+
+* Consolidates knowledge from multiple prior subjects.
+* Requires both backend and frontend integration.
+* Implements real-world business logic.
+* Simulates industry-level workflows.
+* Demonstrates end-to-end system development.
+
+Therefore, although not a graduation-level capstone, it represents the culminating academic exercise within the course.
+
+---
+
+## 7. Conclusion
+
+TixFlix is a fully integrated event and ticketing management system designed to replicate real-world operational workflows within a controlled academic environment. The platform prioritizes security, automation, scalability, and analytical insight.
+
+As a Final Project for Advanced Web Programming, this system demonstrates the ability to design, implement, and integrate multiple advanced web technologies into a coherent and production-oriented application.
+
+The project reflects not only technical proficiency but also architectural planning, problem-solving capability, and practical system design principles relevant to modern web development practices.
+>>>>>>> a700d116b5d2fe06bfd32025452020cf085c8099
