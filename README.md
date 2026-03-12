@@ -243,4 +243,3 @@ TixFlix is a fully integrated event and ticketing management system designed to 
 As a Final Project for Advanced Web Programming, this system demonstrates the ability to design, implement, and integrate multiple advanced web technologies into a coherent and production-oriented application.
 
 The project reflects not only technical proficiency but also architectural planning, problem-solving capability, and practical system design principles relevant to modern web development practices.
->>>>>>> a700d116b5d2fe06bfd32025452020cf085c8099
