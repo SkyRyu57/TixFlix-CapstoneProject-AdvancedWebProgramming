@@ -10,21 +10,24 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            // Relasi ke Users (sebagai Organizer)
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            // Relasi ke Categories
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('description');
             $table->string('location');
-            $table->string('banner')->nullable(); // Untuk upload gambar
+            $table->string('banner')->nullable(); 
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             
-            // Status event untuk dashboard analitik nanti
-            $table->enum('status', ['draft', 'published', 'cancelled'])->default('draft');
+            // REVISI STATUS: Tambahkan 'rejected' dan default-nya 'pending'
+            $table->enum('status', ['pending', 'published', 'rejected', 'cancelled'])->default('pending');
+
+            // TAMBAHAN: Audit Trail untuk Admin
+            $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('edited_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->timestamp('approved_at')->nullable();
             
             $table->timestamps();
         });

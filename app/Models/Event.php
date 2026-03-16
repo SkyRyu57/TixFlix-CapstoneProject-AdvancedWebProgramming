@@ -20,7 +20,10 @@ class Event extends Model
         'banner',
         'start_date',
         'end_date',
-        'status'
+        'status',
+        'approved_by', // Admin yang acc
+        'edited_by',   // Admin yang edit terakhir
+        'approved_at'
     ];
 
     protected static function boot()
@@ -28,7 +31,6 @@ class Event extends Model
         parent::boot();
         
         static::creating(function ($event) {
-            // Membuat slug otomatis dari title saat event baru dibuat
             $event->slug = Str::slug($event->title);
         });
     }
@@ -39,7 +41,13 @@ class Event extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relasi balik ke Category
+    // Relasi ke Admin yang menyetujui
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // Relasi ke Category
     public function category()
     {
         return $this->belongsTo(Category::class);
