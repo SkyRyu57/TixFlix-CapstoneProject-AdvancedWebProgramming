@@ -20,14 +20,26 @@ class Event extends Model
         'banner',
         'start_date',
         'end_date',
-        'status'
+        'status',
+        'approved_by', // Admin yang acc
+        'edited_by',   // Admin yang edit terakhir
+        'approved_at'
     ];
 
     protected static function boot()
     {
         parent::boot();
+        
         static::creating(function ($event) {
-            $event->slug = Str::slug($event->title);
+            // Slug otomatis saat create
+            $event->slug = Str::slug($event->title) . '-' . Str::random(5);
+        });
+
+        static::updating(function ($event) {
+            // Update slug kalau judul diubah Admin/Organizer
+            if ($event->isDirty('title')) {
+                $event->slug = Str::slug($event->title) . '-' . Str::random(5);
+            }
         });
     }
 
@@ -37,7 +49,13 @@ class Event extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relasi balik ke Category
+    // Relasi ke Admin yang menyetujui
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    // Relasi ke Category
     public function category()
     {
         return $this->belongsTo(Category::class);
