@@ -26,7 +26,9 @@ class Event extends Model
     protected static function boot()
     {
         parent::boot();
+        
         static::creating(function ($event) {
+            // Membuat slug otomatis dari title saat event baru dibuat
             $event->slug = Str::slug($event->title);
         });
     }
@@ -41,5 +43,11 @@ class Event extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    // Relasi ke tabel Ticket (1 Event punya banyak Ticket)
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
     }
 }
