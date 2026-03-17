@@ -1,116 +1,28 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Login | CinePass</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
-<style>
-
-body{
-background:linear-gradient(135deg,#020617,#020617,#0f172a);
-height:100vh;
-display:flex;
-align-items:center;
-justify-content:center;
-font-family:'Inter',sans-serif;
-color:#e2e8f0;
-}
-
-.card{
-width:420px;
-background:#1e293b;
-border:none;
-border-radius:14px;
-padding:40px;
-box-shadow:0 25px 50px rgba(0,0,0,0.6);
-}
-
-.logo{
-font-size:30px;
-font-weight:700;
-text-align:center;
-margin-bottom:5px;
-color:#818cf8;
-}
-
-.subtitle{
-text-align:center;
-color:#94a3b8;
-margin-bottom:30px;
-}
-
-label{
-font-size:14px;
-color:#cbd5f5;
-margin-bottom:6px;
-}
-
-.input-group-text{
-background:#020617;
-border:1px solid #334155;
-color:#818cf8;
-}
-
-.form-control{
-background:#0f172a;
-border:1px solid #334155;
-color:#e2e8f0;
-padding:12px;
-}
-
-.form-control::placeholder{
-color:#94a3b8;
-}
-
-.form-control:focus{
-background:#ffffff;
-color:#0f172a;
-border-color:#6366f1;
-box-shadow:0 0 0 2px rgba(99,102,241,0.2);
-}
-
-.btn-login{
-margin-top:15px;
-background:linear-gradient(135deg,#6366f1,#8b5cf6);
-border:none;
-padding:13px;
-font-weight:600;
-border-radius:8px;
-width:100%;
-}
-
-.register-link{
-text-align:center;
-margin-top:15px;
-color:#94a3b8;
-}
-
-.register-link a{
-color:#818cf8;
-text-decoration:none;
-font-weight:600;
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Tixflix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
+<body class="bg-[#0B0F19] flex items-center justify-center min-h-screen py-10">
 
-<body>
+    <div class="bg-[#1A1D24] p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800">
+        
+        <div class="flex justify-center items-center gap-2 mb-2">
+            <div class="bg-[#FF4D4F] p-2 rounded-xl">
+                <i class="bi bi-ticket-perforated-fill text-white text-xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">Tixflix</h1>
+        </div>
 
-<div class="card">
-
-<div class="logo">
-<i class="bi bi-ticket-perforated-fill"></i> CinePass
-</div>
-
-<div class="subtitle">
-Login untuk membeli atau mengelola event
-</div>
+        <p class="text-center text-slate-400 text-sm mb-8">Login untuk membeli atau mengelola event</p>
 
         @if(session('success'))
             <div class="bg-green-500/10 border-l-4 border-green-500 text-green-500 p-4 mb-6 rounded-r-lg text-sm">
