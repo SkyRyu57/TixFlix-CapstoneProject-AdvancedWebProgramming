@@ -60,7 +60,7 @@ Route::middleware('auth')->group(function () {
             $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])->where('status', 'published')->take(4)->get(); // <-- Tarik relasi tiket buat harga
             $semuaEvents = \App\Models\Event::with(['category', 'tickets'])->where('status', 'published')->orderBy('start_date', 'asc')->get();
 
-            return view('dashboard.customer', compact('categories', 'pilihanEvents', 'semuaEvents'));
+            return view('dashboard-customer.customer', compact('categories', 'pilihanEvents', 'semuaEvents'));
         })->name('dashboard');
 
         // --- Rute untuk Navbar (Dinamis dari Database) ---
@@ -72,7 +72,7 @@ Route::middleware('auth')->group(function () {
                 ->where('status', 'published')
                 ->orderBy('start_date', 'asc')
                 ->get();
-            return view('dashboard.concerts', compact('concerts'));
+            return view('dashboard-customer.concerts', compact('concerts'));
         })->name('concerts');
 
         Route::get('/festivals', function () {
@@ -83,14 +83,14 @@ Route::middleware('auth')->group(function () {
                 ->where('status', 'published')
                 ->orderBy('start_date', 'asc')
                 ->get();
-            return view('dashboard.festivals', compact('festivals'));
+            return view('dashboard-customer.festivals', compact('festivals'));
         })->name('festivals');
         // -----------------------------------------
 
         // Menampilkan Halaman Detail Event
         Route::get('/events/{id}', function ($id) {
             $event = \App\Models\Event::with(['category', 'tickets'])->findOrFail($id);
-            return view('dashboard.show', compact('event'));
+            return view('dashboard-customer.show', compact('event'));
         });
 
         // Memproses ke halaman Checkout
@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
                     $totalTickets += $quantity;
                 }
             }
-            return view('dashboard.checkout', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets'));
+            return view('dashboard-customer.checkout', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets'));
         })->name('checkout.process');
 
         // Menampilkan Halaman QRIS Pembayaran
@@ -125,7 +125,7 @@ Route::middleware('auth')->group(function () {
             $eventId = $request->event_id;
             $tickets = $request->tickets;
             $totalPrice = $request->total_price;
-            return view('dashboard.payment', compact('eventId', 'tickets', 'totalPrice'));
+            return view('dashboard-customer.payment', compact('eventId', 'tickets', 'totalPrice'));
         });
 
         // Memproses Pembayaran & Menghasilkan E-Ticket ke Database
@@ -179,7 +179,7 @@ Route::middleware('auth')->group(function () {
         // Menampilkan Halaman E-Ticket Saya
         Route::get('/my-tickets', function () {
             $myTickets = \App\Models\Eticket::with(['ticket.event'])->where('user_id', auth()->id())->latest()->get();
-            return view('dashboard.my-tickets', compact('myTickets'));
+            return view('dashboard-customer.my-tickets', compact('myTickets'));
         })->name('my-tickets');
 
         // Menampilkan Halaman Pesanan / Transaksi Saya

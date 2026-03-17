@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Login | CinePass</title>
+<title>Login | TixFlix</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
@@ -105,7 +105,7 @@ font-weight:600;
 <div class="card">
 
 <div class="logo">
-<i class="bi bi-ticket-perforated-fill"></i> CinePass
+<i class="bi bi-ticket-perforated-fill"></i> TixFlix
 </div>
 
 <div class="subtitle">
