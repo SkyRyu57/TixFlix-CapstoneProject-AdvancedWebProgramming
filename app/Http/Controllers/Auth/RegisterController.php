@@ -20,6 +20,7 @@ class RegisterController extends Controller
             'phone_number' => 'nullable|numeric|digits_between:10,15', // Validasi angka & panjang
             'password'     => 'required|string|min:8|confirmed',
             'role'         => 'required|in:admin,organizer,customer', // Pastikan sesuai Enum
+            'country'      => 'nullable|string|max:255',
         ]);
 
         // 2. SIMPAN DATA KE DATABASE
@@ -31,6 +32,7 @@ class RegisterController extends Controller
             'role'         => $request->role,
             'created_at'   => Carbon::now(),
             'updated_at'   => Carbon::now(),
+            'country'      => $request->country,
         ]);
 
         // 3. AUTO LOGIN & REDIRECT
