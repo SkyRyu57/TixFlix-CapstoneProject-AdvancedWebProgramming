@@ -38,9 +38,41 @@ Route::middleware('auth')->group(function () {
 
     // ADMIN DASHBOARD
     Route::middleware('role:admin')->group(function () {
+        // Dashboard Utama (index.blade.php)
         Route::get('/admin/dashboard', function () {
-            return "Halo Admin! Ini Dashboard kamu. <br> <form action='".route('logout')."' method='POST'>".csrf_field()."<button type='submit'>Logout Resmi</button></form>";
+            return view('dashboard-admin.index');
         })->name('admin.dashboard');
+
+        // Route untuk halaman lainnya secara otomatis (Opsional)
+        // Atau definisikan satu per satu agar lebih terkontrol:
+
+        Route::get('/admin/charts', function () {
+            return view('dashboard-admin.chart');
+        })->name('admin.charts');
+
+        Route::get('/admin/forms', function () {
+            return view('dashboard-admin.form');
+        })->name('admin.forms');
+
+        Route::get('/admin/tables', function () {
+            return view('dashboard-admin.table');
+        })->name('admin.tables');
+
+        Route::get('/admin/widgets', function () {
+            return view('dashboard-admin.widget');
+        })->name('admin.widgets');
+
+        Route::get('/admin/elements', function () {
+            return view('dashboard-admin.element');
+        })->name('admin.elements');
+
+        Route::get('/admin/typography', function () {
+            return view('dashboard-admin.typography');
+        })->name('admin.typography');
+
+        Route::get('/admin/buttons', function () {
+            return view('dashboard-admin.button');
+        })->name('admin.buttons');
     });
 
     // ORGANIZER DASHBOARD
