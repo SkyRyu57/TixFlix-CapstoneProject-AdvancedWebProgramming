@@ -2,32 +2,28 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Atribut yang dapat diisi (Mass Assignment).
      */
     protected $fillable = [
         'name',
         'email',
+        'phone_number',
         'password',
+        'role',
+        'country',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Atribut yang disembunyikan.
      */
     protected $hidden = [
         'password',
@@ -35,9 +31,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Casting tipe data.
      */
     protected function casts(): array
     {
@@ -46,4 +40,55 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-}
+
+    /**
+     * ==========================================
+     * HELPER FUNGSI ROLE
+     * ==========================================
+     */
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isOrganizer()
+    {
+        return $this->role === 'organizer';
+    }
+
+    public function isCustomer()
+    {
+        return $this->role === 'user';
+    }
+
+    /**
+     * ==========================================
+     * RELASI ELOQUENT
+     * ==========================================
+     */
+
+    // Event yang dibuat oleh user ini (sebagai Organizer)
+    public function events()
+    {
+        return $this->hasMany(Event::class, 'user_id');
+    }
+
+    // Event yang disetujui oleh user ini (jika dia Admin)
+    public function approvedEvents()
+    {
+        return $this->hasMany(Event::class, 'approved_by');
+    }
+
+    // Event yang pernah diedit oleh user ini (jika dia Admin)
+    public function editedEvents()
+    {
+        return $this->hasMany(Event::class, 'edited_by');
+    }
+
+    // Antrean/Waiting List yang dimiliki user ini
+    public function waitingLists()
+    {
+        return $this->hasMany(WaitingList::class);
+    }
+}   
