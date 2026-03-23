@@ -6,23 +6,35 @@ use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
+// ============================================
 // 1. HALAMAN UTAMA
+// ============================================
 Route::get('/', function () {
     return view('welcome');
 });
 
+// ============================================
 // 2. AUTHENTICATION (GUEST)
+// ============================================
 Route::middleware('guest')->group(function () {
-    Route::get('/register', function () { return view('auth.register'); })->name('register');
-    Route::get('/login', function () { return view('auth.login'); })->name('login');
+    Route::get('/register', function () { 
+        return view('auth.register'); 
+    })->name('register');
+    
+    Route::get('/login', function () { 
+        return view('auth.login'); 
+    })->name('login');
     
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
     Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
 });
 
+// ============================================
 // 3. TERPROTEKSI (Harus Login)
+// ============================================
 Route::middleware('auth')->group(function () {
     
+    // Redirect berdasarkan role
     Route::get('/home', function () {
         $role = auth()->user()->role;
         if ($role == 'admin') return redirect()->route('admin.dashboard');
@@ -31,29 +43,312 @@ Route::middleware('auth')->group(function () {
     })->name('home');
 
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    
     Route::get('/logout', function () {
         return redirect()->route('home');
     });
 
+    // ========================================
     // ADMIN DASHBOARD
+    // ========================================
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', function () {
-            return "Halo Admin! Ini Dashboard kamu. <br> <form action='".route('logout')."' method='POST'>".csrf_field()."<button type='submit'>Logout Resmi</button></form>";
+            return view('dashboard-admin.admin');
         })->name('admin.dashboard');
     });
 
+    // ========================================
     // ORGANIZER DASHBOARD
+    // ========================================
     Route::middleware('role:organizer')->group(function () {
+        
+        // Dashboard utama
         Route::get('/organizer/dashboard', function () {
-            return "Halo Organizer! Kelola event di sini. <br> <form action='".route('logout')."' method='POST'>".csrf_field()."<button type='submit'>Logout Resmi</button></form>";
+            $events = \App\Models\Event::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+            
+            $totalEvents = \App\Models\Event::where('user_id', auth()->id())->count();
+            $totalTicketsSold = \App\Models\Eticket::whereHas('ticket.event', function($q) {
+                $q->where('user_id', auth()->id());
+            })->count();
+            
+            $totalRevenue = \App\Models\Eticket::whereHas('ticket.event', function($q) {
+                $q->where('user_id', auth()->id());
+            })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
+              ->sum('tickets.price');
+            
+            $upcomingEvents = \App\Models\Event::where('user_id', auth()->id())
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->count();
+            
+            // Data untuk chart dan financial report
+            $allEvents = \App\Models\Event::with('category')
+                ->where('user_id', auth()->id())
+                ->get();
+            
+            $eventFinancials = [];
+            $eventLabels = [];
+            $eventSalesData = [];
+            $eventRevenueData = [];
+            
+            foreach ($allEvents as $event) {
+                $ticketsSold = \App\Models\Eticket::whereHas('ticket', function($q) use ($event) {
+                    $q->where('event_id', $event->id);
+                })->count();
+                
+                $revenue = \App\Models\Eticket::whereHas('ticket', function($q) use ($event) {
+                    $q->where('event_id', $event->id);
+                })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
+                  ->sum('tickets.price');
+                
+                $eventFinancials[] = [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'category' => $event->category->name ?? 'Uncategorized',
+                    'banner' => $event->banner,
+                    'start_date' => $event->start_date,
+                    'tickets_sold' => $ticketsSold,
+                    'revenue' => $revenue,
+                    'platform_fee' => $revenue * 0.1,
+                    'net_income' => $revenue * 0.9,
+                ];
+                
+                $eventLabels[] = \Illuminate\Support\Str::limit($event->title, 15);
+                $eventSalesData[] = $ticketsSold;
+                $eventRevenueData[] = $revenue;
+            }
+            
+            return view('dashboard-organizer.organizer', compact(
+                'events', 'totalEvents', 'totalTicketsSold', 'totalRevenue', 'upcomingEvents',
+                'eventFinancials', 'eventLabels', 'eventSalesData', 'eventRevenueData'
+            ));
         })->name('organizer.dashboard');
+        
+        // Events list
+        Route::get('/organizer/events', function () {
+            $events = \App\Models\Event::with(['category'])
+                ->where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+            
+            return view('dashboard-organizer.events', compact('events'));
+        })->name('organizer.events');
+        
+        // Create event form
+        Route::get('/organizer/events/create', function () {
+            $categories = \App\Models\Category::all();
+            return view('dashboard-organizer.event-create', compact('categories'));
+        })->name('organizer.event.create');
+        
+        // Store event
+        Route::post('/organizer/events', function (\Illuminate\Http\Request $request) {
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'description' => 'required|string',
+                'location' => 'required|string|max:255',
+                'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'start_date' => 'required|date|after:now',
+                'end_date' => 'required|date|after:start_date',
+                'status' => 'required|in:draft,published',
+            ]);
+
+            $bannerPath = null;
+            if ($request->hasFile('banner')) {
+                $bannerPath = $request->file('banner')->store('events', 'public');
+            }
+
+            $slug = \Illuminate\Support\Str::slug($request->title) . '-' . \Illuminate\Support\Str::random(6);
+
+            $event = \App\Models\Event::create([
+                'user_id' => auth()->id(),
+                'category_id' => $request->category_id,
+                'title' => $request->title,
+                'slug' => $slug,
+                'description' => $request->description,
+                'location' => $request->location,
+                'banner' => $bannerPath,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'status' => $request->status,
+            ]);
+
+            return redirect()->route('organizer.event.tickets', $event->id)
+                ->with('success', 'Event created! Now add tickets for this event.');
+        })->name('organizer.event.store');
+        
+        // Edit event form
+        Route::get('/organizer/events/{id}/edit', function ($id) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
+            $categories = \App\Models\Category::all();
+            return view('dashboard-organizer.event-edit', compact('event', 'categories'));
+        })->name('organizer.event.edit');
+        
+        // Update event
+        Route::put('/organizer/events/{id}', function (\Illuminate\Http\Request $request, $id) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
+            
+            $request->validate([
+                'title' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'description' => 'required|string',
+                'location' => 'required|string|max:255',
+                'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after:start_date',
+                'status' => 'required|in:draft,published',
+            ]);
+
+            if ($request->hasFile('banner')) {
+                if ($event->banner && \Illuminate\Support\Facades\Storage::disk('public')->exists($event->banner)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($event->banner);
+                }
+                $event->banner = $request->file('banner')->store('events', 'public');
+            }
+
+            $event->update([
+                'title' => $request->title,
+                'category_id' => $request->category_id,
+                'description' => $request->description,
+                'location' => $request->location,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'status' => $request->status,
+            ]);
+
+            return redirect()->route('organizer.events')->with('success', 'Event updated!');
+        })->name('organizer.event.update');
+        
+        // Event detail
+        Route::get('/organizer/events/{id}', function ($id) {
+            $event = \App\Models\Event::with(['category', 'tickets'])
+                ->where('user_id', auth()->id())
+                ->findOrFail($id);
+            
+            $ticketsSold = \App\Models\Eticket::whereHas('ticket', function($q) use ($id) {
+                $q->where('event_id', $id);
+            })->count();
+            
+            $revenue = \App\Models\Eticket::whereHas('ticket', function($q) use ($id) {
+                $q->where('event_id', $id);
+            })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
+              ->sum('tickets.price');
+            
+            $tickets = \App\Models\Ticket::where('event_id', $id)->get();
+            
+            return view('dashboard-organizer.event-detail', compact('event', 'ticketsSold', 'revenue', 'tickets'));
+        })->name('organizer.event.detail');
+        
+        // Manage tickets for event
+        Route::get('/organizer/events/{id}/tickets', function ($id) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
+            $tickets = \App\Models\Ticket::where('event_id', $id)->get();
+            
+            return view('dashboard-organizer.tickets', compact('event', 'tickets'));
+        })->name('organizer.event.tickets');
+        
+        // Store ticket
+        Route::post('/organizer/events/{id}/tickets', function (\Illuminate\Http\Request $request, $id) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
+            
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'price' => 'required|integer|min:0',
+                'stock' => 'required|integer|min:1',
+                'description' => 'nullable|string',
+            ]);
+
+            \App\Models\Ticket::create([
+                'event_id' => $id,
+                'name' => $request->name,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'description' => $request->description,
+            ]);
+
+            return back()->with('success', 'Ticket added!');
+        })->name('organizer.ticket.store');
+        
+        // Update ticket
+        Route::put('/organizer/events/{eventId}/tickets/{ticketId}', function (\Illuminate\Http\Request $request, $eventId, $ticketId) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($eventId);
+            $ticket = \App\Models\Ticket::where('event_id', $eventId)->findOrFail($ticketId);
+            
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'price' => 'required|integer|min:0',
+                'stock' => 'required|integer|min:0',
+                'description' => 'nullable|string',
+            ]);
+
+            $ticket->update([
+                'name' => $request->name,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'description' => $request->description,
+            ]);
+
+            return back()->with('success', 'Ticket updated!');
+        })->name('organizer.ticket.update');
+        
+        // Delete ticket
+        Route::delete('/organizer/events/{eventId}/tickets/{ticketId}', function ($eventId, $ticketId) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($eventId);
+            $ticket = \App\Models\Ticket::where('event_id', $eventId)->findOrFail($ticketId);
+            
+            $soldCount = \App\Models\Eticket::where('ticket_id', $ticketId)->count();
+            
+            if ($soldCount > 0) {
+                return back()->with('error', 'Cannot delete ticket that has been sold!');
+            }
+            
+            $ticket->delete();
+            
+            return back()->with('success', 'Ticket deleted!');
+        })->name('organizer.ticket.delete');
+        
+        // Delete event
+        Route::delete('/organizer/events/{id}', function ($id) {
+            $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
+            
+            $ticketsSold = \App\Models\Eticket::whereHas('ticket', function($q) use ($id) {
+                $q->where('event_id', $id);
+            })->count();
+            
+            if ($ticketsSold > 0) {
+                return back()->with('error', 'Cannot delete event that has tickets sold!');
+            }
+            
+            if ($event->banner && \Illuminate\Support\Facades\Storage::disk('public')->exists($event->banner)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($event->banner);
+            }
+            
+            \App\Models\Ticket::where('event_id', $id)->delete();
+            $event->delete();
+            
+            return redirect()->route('organizer.events')->with('success', 'Event deleted!');
+        })->name('organizer.event.delete');
+        
+        // Attendees list
+        Route::get('/organizer/attendees', function () {
+            $attendees = \App\Models\Eticket::with(['ticket.event', 'user'])
+                ->whereHas('ticket.event', function($q) {
+                    $q->where('user_id', auth()->id());
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
+            
+            return view('dashboard-organizer.attendees', compact('attendees'));
+        })->name('organizer.attendees');
     });
 
+    // ========================================
     // CUSTOMER DASHBOARD
+    // ========================================
     Route::middleware('role:customer')->group(function () {
         
-        // Dashboard Utama
         Route::get('/dashboard', function () {
             $categories = \App\Models\Category::all();
             $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])
@@ -72,7 +367,6 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-customer.customer', compact('categories', 'pilihanEvents', 'semuaEvents'));
         })->name('dashboard');
 
-        // Concerts
         Route::get('/concerts', function () {
             $concerts = \App\Models\Event::with(['category', 'tickets'])
                 ->whereHas('category', function($query) {
@@ -87,7 +381,6 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-customer.concerts', compact('concerts'));
         })->name('concerts');
 
-        // Festivals
         Route::get('/festivals', function () {
             $festivals = \App\Models\Event::with(['category', 'tickets'])
                 ->whereHas('category', function($query) {
@@ -101,24 +394,19 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-customer.festivals', compact('festivals'));
         })->name('festivals');
 
-        // Category Events (BARU)
         Route::get('/category/{id}', function ($id) {
             $category = \App\Models\Category::findOrFail($id);
-            
             $events = \App\Models\Event::with(['category', 'tickets'])
                 ->where('category_id', $id)
                 ->where('status', 'published')
                 ->where('start_date', '>=', now())
                 ->orderBy('start_date', 'asc')
                 ->paginate(12);
-            
             return view('dashboard-customer.category-events', compact('category', 'events'));
         })->name('category.events');
 
-        // Detail Event
         Route::get('/events/{id}', function ($id) {
             $event = \App\Models\Event::with(['category', 'tickets'])->findOrFail($id);
-            
             $relatedEvents = \App\Models\Event::with(['category', 'tickets'])
                 ->where('category_id', $event->category_id)
                 ->where('id', '!=', $event->id)
@@ -126,11 +414,9 @@ Route::middleware('auth')->group(function () {
                 ->where('start_date', '>=', now())
                 ->take(4)
                 ->get();
-            
             return view('dashboard-customer.show', compact('event', 'relatedEvents'));
         })->name('event.detail');
 
-        // Checkout
         Route::post('/checkout', function (\Illuminate\Http\Request $request) {
             $eventId = $request->event_id;
             $ticketData = $request->tickets;
@@ -167,16 +453,13 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-customer.checkout', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets'));
         })->name('checkout.process');
 
-        // Payment Page
         Route::post('/payment', function (\Illuminate\Http\Request $request) {
             $eventId = $request->event_id;
             $tickets = $request->tickets;
             $totalPrice = $request->total_price;
-            
             return view('dashboard-customer.payment', compact('eventId', 'tickets', 'totalPrice'));
         })->name('payment.page');
 
-        // Process Payment
         Route::post('/payment/process', function (\Illuminate\Http\Request $request) {
             $ticketData = $request->tickets;
             
@@ -192,7 +475,6 @@ Route::middleware('auth')->group(function () {
                 }
             }
 
-            // Simpan Transaksi
             $transaction = \App\Models\Transaction::create([
                 'user_id' => auth()->id(),
                 'total_price' => $totalPrice,
@@ -200,7 +482,6 @@ Route::middleware('auth')->group(function () {
                 'reference_number' => 'TRX-' . strtoupper(Str::random(10)),
             ]);
 
-            // Simpan E-Ticket
             if ($ticketData) {
                 foreach ($ticketData as $ticketId => $quantity) {
                     if ($quantity > 0) {
@@ -225,13 +506,11 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('my-tickets')->with('success', 'Pembayaran berhasil! E-Ticket kamu sudah terbit.');
         })->name('payment.process');
 
-        // My Tickets
         Route::get('/my-tickets', function () {
             $myTickets = \App\Models\Eticket::with(['ticket.event'])
                 ->where('user_id', auth()->id())
                 ->latest()
                 ->get();
-            
             return view('dashboard-customer.my-tickets', compact('myTickets'));
         })->name('my-tickets');
     });
