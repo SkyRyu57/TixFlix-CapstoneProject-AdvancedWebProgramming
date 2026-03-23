@@ -3,15 +3,15 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Dashboard\CustomerController;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 // 1. HALAMAN UTAMA
 Route::get('/', function () {
     return view('welcome');
 });
 
-// 2. AUTHENTICATION (GUEST - Hanya bisa diakses jika BELUM login)
+// 2. AUTHENTICATION (GUEST)
 Route::middleware('guest')->group(function () {
     Route::get('/register', function () { return view('auth.register'); })->name('register');
     Route::get('/login', function () { return view('auth.login'); })->name('login');
@@ -23,77 +23,114 @@ Route::middleware('guest')->group(function () {
 // 3. TERPROTEKSI (Harus Login)
 Route::middleware('auth')->group(function () {
     
-    // --- PUSAT KENDALI REDIRECT (PENTING) ---
     Route::get('/home', function () {
         $role = auth()->user()->role;
         if ($role == 'admin') return redirect()->route('admin.dashboard');
         if ($role == 'organizer') return redirect()->route('organizer.dashboard');
-        return redirect()->route('dashboard'); // Untuk customer
+        return redirect()->route('dashboard');
     })->name('home');
 
-    // --- PROSES KELUAR (LOGOUT) ---
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+    
     Route::get('/logout', function () {
         return redirect()->route('home');
     });
 
-    // --- DASHBOARD: ADMIN ---
+    // ADMIN DASHBOARD
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', function () {
             return "Halo Admin! Ini Dashboard kamu. <br> <form action='".route('logout')."' method='POST'>".csrf_field()."<button type='submit'>Logout Resmi</button></form>";
         })->name('admin.dashboard');
     });
 
-    // --- DASHBOARD: ORGANIZER ---
+    // ORGANIZER DASHBOARD
     Route::middleware('role:organizer')->group(function () {
         Route::get('/organizer/dashboard', function () {
             return "Halo Organizer! Kelola event di sini. <br> <form action='".route('logout')."' method='POST'>".csrf_field()."<button type='submit'>Logout Resmi</button></form>";
         })->name('organizer.dashboard');
     });
 
-    // --- DASHBOARD: CUSTOMER ---
+    // CUSTOMER DASHBOARD
     Route::middleware('role:customer')->group(function () {
         
-        // Menampilkan Dashboard Utama (Beranda, Trending, Semua Event)
+        // Dashboard Utama
         Route::get('/dashboard', function () {
-            $categories = \App\Models\Category::all(); // <-- TAMBAHAN: Tarik semua kategori
-            $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])->where('status', 'published')->take(4)->get(); // <-- Tarik relasi tiket buat harga
-            $semuaEvents = \App\Models\Event::with(['category', 'tickets'])->where('status', 'published')->orderBy('start_date', 'asc')->get();
+            $categories = \App\Models\Category::all();
+            $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->orderBy('created_at', 'desc')
+                ->take(4)
+                ->get();
+            
+            $semuaEvents = \App\Models\Event::with(['category', 'tickets'])
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->orderBy('start_date', 'asc')
+                ->get();
 
             return view('dashboard-customer.customer', compact('categories', 'pilihanEvents', 'semuaEvents'));
         })->name('dashboard');
 
-        // --- Rute untuk Navbar (Dinamis dari Database) ---
+        // Concerts
         Route::get('/concerts', function () {
-            $concerts = \App\Models\Event::with('category')
+            $concerts = \App\Models\Event::with(['category', 'tickets'])
                 ->whereHas('category', function($query) {
-                    $query->where('slug', 'like', '%musik%');
+                    $query->where('slug', 'like', '%musik%')
+                          ->orWhere('name', 'like', '%Konser%')
+                          ->orWhere('name', 'like', '%Music%');
                 })
                 ->where('status', 'published')
+                ->where('start_date', '>=', now())
                 ->orderBy('start_date', 'asc')
                 ->get();
             return view('dashboard-customer.concerts', compact('concerts'));
         })->name('concerts');
 
+        // Festivals
         Route::get('/festivals', function () {
-            $festivals = \App\Models\Event::with('category')
+            $festivals = \App\Models\Event::with(['category', 'tickets'])
                 ->whereHas('category', function($query) {
-                    $query->where('slug', 'like', '%festival%');
+                    $query->where('slug', 'like', '%festival%')
+                          ->orWhere('name', 'like', '%Festival%');
                 })
                 ->where('status', 'published')
+                ->where('start_date', '>=', now())
                 ->orderBy('start_date', 'asc')
                 ->get();
             return view('dashboard-customer.festivals', compact('festivals'));
         })->name('festivals');
-        // -----------------------------------------
 
-        // Menampilkan Halaman Detail Event
+        // Category Events (BARU)
+        Route::get('/category/{id}', function ($id) {
+            $category = \App\Models\Category::findOrFail($id);
+            
+            $events = \App\Models\Event::with(['category', 'tickets'])
+                ->where('category_id', $id)
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->orderBy('start_date', 'asc')
+                ->paginate(12);
+            
+            return view('dashboard-customer.category-events', compact('category', 'events'));
+        })->name('category.events');
+
+        // Detail Event
         Route::get('/events/{id}', function ($id) {
             $event = \App\Models\Event::with(['category', 'tickets'])->findOrFail($id);
-            return view('dashboard-customer.show', compact('event'));
-        });
+            
+            $relatedEvents = \App\Models\Event::with(['category', 'tickets'])
+                ->where('category_id', $event->category_id)
+                ->where('id', '!=', $event->id)
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->take(4)
+                ->get();
+            
+            return view('dashboard-customer.show', compact('event', 'relatedEvents'));
+        })->name('event.detail');
 
-        // Memproses ke halaman Checkout
+        // Checkout
         Route::post('/checkout', function (\Illuminate\Http\Request $request) {
             $eventId = $request->event_id;
             $ticketData = $request->tickets;
@@ -106,6 +143,11 @@ Route::middleware('auth')->group(function () {
             foreach ($ticketData as $ticketId => $quantity) {
                 if ($quantity > 0) {
                     $ticket = \App\Models\Ticket::findOrFail($ticketId);
+                    
+                    if ($ticket->stock < $quantity) {
+                        return back()->with('error', 'Stok tiket "' . $ticket->name . '" tidak mencukupi!');
+                    }
+                    
                     $subtotal = $ticket->price * $quantity;
                     
                     $selectedTickets[] = [
@@ -117,18 +159,24 @@ Route::middleware('auth')->group(function () {
                     $totalTickets += $quantity;
                 }
             }
+            
+            if ($totalTickets == 0) {
+                return back()->with('error', 'Pilih minimal 1 tiket!');
+            }
+            
             return view('dashboard-customer.checkout', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets'));
         })->name('checkout.process');
 
-        // Menampilkan Halaman QRIS Pembayaran
+        // Payment Page
         Route::post('/payment', function (\Illuminate\Http\Request $request) {
             $eventId = $request->event_id;
             $tickets = $request->tickets;
             $totalPrice = $request->total_price;
+            
             return view('dashboard-customer.payment', compact('eventId', 'tickets', 'totalPrice'));
-        });
+        })->name('payment.page');
 
-        // Memproses Pembayaran & Menghasilkan E-Ticket ke Database
+        // Process Payment
         Route::post('/payment/process', function (\Illuminate\Http\Request $request) {
             $ticketData = $request->tickets;
             
@@ -144,28 +192,28 @@ Route::middleware('auth')->group(function () {
                 }
             }
 
-            // 1. Simpan Transaksi dengan Reference Number
+            // Simpan Transaksi
             $transaction = \App\Models\Transaction::create([
                 'user_id' => auth()->id(),
-                'total_price' => $totalPrice, 
-                'status' => 'paid', 
+                'total_price' => $totalPrice,
+                'status' => 'paid',
                 'reference_number' => 'TRX-' . strtoupper(Str::random(10)),
             ]);
 
-            // 2. Simpan E-Ticket dengan Ticket Code
+            // Simpan E-Ticket
             if ($ticketData) {
                 foreach ($ticketData as $ticketId => $quantity) {
                     if ($quantity > 0) {
                         for ($i = 0; $i < $quantity; $i++) {
                             \App\Models\Eticket::create([
-                                'transaction_id' => $transaction->id, 
+                                'transaction_id' => $transaction->id,
                                 'ticket_id' => $ticketId,
                                 'user_id' => auth()->id(),
                                 'ticket_code' => 'TIX-' . strtoupper(Str::random(8)),
                                 'is_scanned' => false,
                             ]);
                         }
-                        // 3. Kurangi Stok Tiket
+                        
                         $ticket = \App\Models\Ticket::find($ticketId);
                         if($ticket && $ticket->stock >= $quantity) {
                             $ticket->decrement('stock', $quantity);
@@ -173,21 +221,18 @@ Route::middleware('auth')->group(function () {
                     }
                 }
             }
+            
             return redirect()->route('my-tickets')->with('success', 'Pembayaran berhasil! E-Ticket kamu sudah terbit.');
-        });
+        })->name('payment.process');
 
-        // Menampilkan Halaman E-Ticket Saya
+        // My Tickets
         Route::get('/my-tickets', function () {
-            $myTickets = \App\Models\Eticket::with(['ticket.event'])->where('user_id', auth()->id())->latest()->get();
+            $myTickets = \App\Models\Eticket::with(['ticket.event'])
+                ->where('user_id', auth()->id())
+                ->latest()
+                ->get();
+            
             return view('dashboard-customer.my-tickets', compact('myTickets'));
         })->name('my-tickets');
-
-        // Menampilkan Halaman Pesanan / Transaksi Saya
-        Route::get('/my-orders', function () {
-            $transactions = \App\Models\Transaction::where('user_id', auth()->id())
-                            ->orderBy('created_at', 'desc')
-                            ->get();
-            return view('dashboard.my-orders', compact('transactions'));
-        })->name('my-orders');
     });
 });
