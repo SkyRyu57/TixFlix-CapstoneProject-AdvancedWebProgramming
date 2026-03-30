@@ -212,18 +212,20 @@
                     <p>Generated: {{ now()->format('d F Y H:i') }}</p>
                 </div>
                 
-                <!-- Header with Export Button -->
+                <!-- Header with Export Buttons -->
                 <div class="flex justify-between items-center mb-6 no-print">
                     <div>
                         <h1 class="text-3xl font-bold">Welcome back, {{ auth()->user()->name }}!</h1>
                         <p class="text-gray-400 mt-1">Here's your financial overview</p>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="window.print()" 
-                                class="btn-export px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
-                            Print / Save as PDF
-                        </button>
+                        
+                        <!-- Tombol Export PDF - Membuka halaman baru untuk print/save as PDF -->
+                        <a href="{{ route('organizer.report.export.pdf') }}" target="_blank"
+                            class="btn-export px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2">
+                            <i data-lucide="file-pdf" class="w-4 h-4"></i>
+                            Export PDF Report
+                        </a>
                     </div>
                 </div>
                 
@@ -234,7 +236,7 @@
                             <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                                 <i data-lucide="calendar" class="w-6 h-6 text-blue-400"></i>
                             </div>
-                            <span class="text-2xl font-bold">{{ $totalEvents }}</span>
+                            <span class="text-2xl font-bold">{{ $totalEvents ?? 0 }}</span>
                         </div>
                         <h3 class="text-gray-400 text-sm">Total Events</h3>
                         <p class="text-xs text-gray-500 mt-1">All your events</p>
@@ -245,7 +247,7 @@
                             <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                                 <i data-lucide="ticket" class="w-6 h-6 text-green-400"></i>
                             </div>
-                            <span class="text-2xl font-bold">{{ number_format($totalTicketsSold) }}</span>
+                            <span class="text-2xl font-bold">{{ number_format($totalTicketsSold ?? 0) }}</span>
                         </div>
                         <h3 class="text-gray-400 text-sm">Tickets Sold</h3>
                         <p class="text-xs text-gray-500 mt-1">Total tickets sold</p>
@@ -256,7 +258,7 @@
                             <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
                                 <i data-lucide="wallet" class="w-6 h-6 text-yellow-400"></i>
                             </div>
-                            <span class="text-2xl font-bold">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</span>
+                            <span class="text-2xl font-bold">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</span>
                         </div>
                         <h3 class="text-gray-400 text-sm">Total Revenue</h3>
                         <p class="text-xs text-gray-500 mt-1">From ticket sales</p>
@@ -267,7 +269,7 @@
                             <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                                 <i data-lucide="calendar-check" class="w-6 h-6 text-purple-400"></i>
                             </div>
-                            <span class="text-2xl font-bold">{{ $upcomingEvents }}</span>
+                            <span class="text-2xl font-bold">{{ $upcomingEvents ?? 0 }}</span>
                         </div>
                         <h3 class="text-gray-400 text-sm">Upcoming Events</h3>
                         <p class="text-xs text-gray-500 mt-1">Events this month</p>
@@ -284,19 +286,19 @@
                         <div class="space-y-3">
                             <div class="flex justify-between items-center py-2 border-b border-white/10">
                                 <span class="text-gray-400">Gross Revenue</span>
-                                <span class="text-xl font-bold text-green-400">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</span>
+                                <span class="text-xl font-bold text-green-400">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</span>
                             </div>
                             <div class="flex justify-between items-center py-2 border-b border-white/10">
                                 <span class="text-gray-400">Platform Fee (10%)</span>
-                                <span class="text-xl font-bold text-yellow-400">Rp {{ number_format($totalRevenue * 0.1, 0, ',', '.') }}</span>
+                                <span class="text-xl font-bold text-yellow-400">Rp {{ number_format(($totalRevenue ?? 0) * 0.1, 0, ',', '.') }}</span>
                             </div>
                             <div class="flex justify-between items-center py-2 border-b border-white/10">
                                 <span class="text-gray-400">Net Revenue</span>
-                                <span class="text-xl font-bold text-blue-400">Rp {{ number_format($totalRevenue * 0.9, 0, ',', '.') }}</span>
+                                <span class="text-xl font-bold text-blue-400">Rp {{ number_format(($totalRevenue ?? 0) * 0.9, 0, ',', '.') }}</span>
                             </div>
                             <div class="flex justify-between items-center py-2">
                                 <span class="text-gray-400">Average Ticket Price</span>
-                                <span class="text-xl font-bold text-white">Rp {{ number_format($totalTicketsSold > 0 ? $totalRevenue / $totalTicketsSold : 0, 0, ',', '.') }}</span>
+                                <span class="text-xl font-bold text-white">Rp {{ number_format(($totalTicketsSold ?? 0) > 0 ? ($totalRevenue ?? 0) / ($totalTicketsSold ?? 0) : 0, 0, ',', '.') }}</span>
                             </div>
                         </div>
                     </div>
@@ -329,10 +331,10 @@
                                     <th class="px-4 py-3">Revenue</th>
                                     <th class="px-4 py-3">Platform Fee</th>
                                     <th class="px-4 py-3">Net Income</th>
-                                  </tr>
+                                   </tr>
                             </thead>
                             <tbody>
-                                @forelse($eventFinancials as $event)
+                                @forelse($eventFinancials ?? [] as $event)
                                     <tr class="border-b border-white/5">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
@@ -344,13 +346,13 @@
                                                     <p class="text-xs text-gray-500">{{ $event['category'] }}</p>
                                                 </div>
                                             </div>
-                                          </td>
+                                        </td>
                                         <td class="px-4 py-3 text-sm">{{ \Carbon\Carbon::parse($event['start_date'])->format('d M Y') }}</td>
                                         <td class="px-4 py-3 text-sm font-semibold">{{ number_format($event['tickets_sold']) }}</td>
                                         <td class="px-4 py-3 text-sm text-green-400">Rp {{ number_format($event['revenue'], 0, ',', '.') }}</td>
                                         <td class="px-4 py-3 text-sm text-yellow-400">Rp {{ number_format($event['platform_fee'], 0, ',', '.') }}</td>
                                         <td class="px-4 py-3 text-sm text-blue-400 font-semibold">Rp {{ number_format($event['net_income'], 0, ',', '.') }}</td>
-                                      </tr>
+                                    </tr>
                                 @empty
                                     <tr>
                                         <td colspan="6" class="px-4 py-8 text-center text-gray-500">
@@ -360,7 +362,7 @@
                                     </tr>
                                 @endforelse
                             </tbody>
-                            @if(count($eventFinancials) > 0)
+                            @if(isset($eventFinancials) && count($eventFinancials) > 0)
                             <tfoot class="border-t border-white/10">
                                 <tr class="font-bold">
                                     <td class="px-4 py-3">Total</td>
@@ -389,22 +391,22 @@
         lucide.createIcons();
         
         // Chart.js untuk sales chart (only if we have data)
-        @if(count($eventSalesData) > 0)
+        @if(isset($eventSalesData) && count($eventSalesData) > 0)
         const ctx = document.getElementById('salesChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: @json($eventLabels),
+                labels: @json($eventLabels ?? []),
                 datasets: [{
                     label: 'Tickets Sold',
-                    data: @json($eventSalesData),
+                    data: @json($eventSalesData ?? []),
                     backgroundColor: 'rgba(255, 45, 85, 0.5)',
                     borderColor: '#ff2d55',
                     borderWidth: 2,
                     borderRadius: 8
                 }, {
                     label: 'Revenue (Rp)',
-                    data: @json($eventRevenueData),
+                    data: @json($eventRevenueData ?? []),
                     backgroundColor: 'rgba(89, 70, 234, 0.5)',
                     borderColor: '#5946ea',
                     borderWidth: 2,

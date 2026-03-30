@@ -84,7 +84,7 @@ Route::middleware('auth')->group(function () {
                 ->count();
             
             // Data untuk chart dan financial report
-            $allEvents = \App\Models\Event::with('category')
+            $allEvents = \App\Models\Event::with('category', 'tickets')
                 ->where('user_id', auth()->id())
                 ->get();
             
@@ -103,16 +103,31 @@ Route::middleware('auth')->group(function () {
                 })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
                   ->sum('tickets.price');
                 
+                // Detail tiket per event untuk laporan
+                $ticketDetails = [];
+                foreach ($event->tickets as $ticket) {
+                    $sold = \App\Models\Eticket::where('ticket_id', $ticket->id)->count();
+                    $ticketDetails[] = [
+                        'name' => $ticket->name,
+                        'price' => $ticket->price,
+                        'stock' => $ticket->stock,
+                        'sold' => $sold,
+                        'revenue' => $sold * $ticket->price,
+                    ];
+                }
+                
                 $eventFinancials[] = [
                     'id' => $event->id,
                     'title' => $event->title,
                     'category' => $event->category->name ?? 'Uncategorized',
                     'banner' => $event->banner,
                     'start_date' => $event->start_date,
+                    'location' => $event->location,
                     'tickets_sold' => $ticketsSold,
                     'revenue' => $revenue,
                     'platform_fee' => $revenue * 0.1,
                     'net_income' => $revenue * 0.9,
+                    'ticket_details' => $ticketDetails,
                 ];
                 
                 $eventLabels[] = \Illuminate\Support\Str::limit($event->title, 15);
@@ -342,6 +357,73 @@ Route::middleware('auth')->group(function () {
             
             return view('dashboard-organizer.attendees', compact('attendees'));
         })->name('organizer.attendees');
+        
+        // ========================================
+        // EXPORT REPORT PDF (TANPA DOMPDF - MENGGUNAKAN BROWSER PRINT)
+        // ========================================
+        Route::get('/organizer/report/export/pdf', function () {
+            $events = \App\Models\Event::with('category', 'tickets')
+                ->where('user_id', auth()->id())
+                ->get();
+            
+            $eventFinancials = [];
+            $totalRevenue = 0;
+            $totalTicketsSold = 0;
+            
+            foreach ($events as $event) {
+                $ticketsSold = \App\Models\Eticket::whereHas('ticket', function($q) use ($event) {
+                    $q->where('event_id', $event->id);
+                })->count();
+                
+                $revenue = \App\Models\Eticket::whereHas('ticket', function($q) use ($event) {
+                    $q->where('event_id', $event->id);
+                })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
+                  ->sum('tickets.price');
+                
+                // Detail tiket per event
+                $ticketDetails = [];
+                foreach ($event->tickets as $ticket) {
+                    $sold = \App\Models\Eticket::where('ticket_id', $ticket->id)->count();
+                    $ticketDetails[] = [
+                        'name' => $ticket->name,
+                        'price' => $ticket->price,
+                        'stock' => $ticket->stock,
+                        'sold' => $sold,
+                        'revenue' => $sold * $ticket->price,
+                    ];
+                }
+                
+                $eventFinancials[] = [
+                    'title' => $event->title,
+                    'category' => $event->category->name ?? 'Uncategorized',
+                    'start_date' => $event->start_date,
+                    'location' => $event->location,
+                    'tickets_sold' => $ticketsSold,
+                    'revenue' => $revenue,
+                    'platform_fee' => $revenue * 0.1,
+                    'net_income' => $revenue * 0.9,
+                    'ticket_details' => $ticketDetails,
+                ];
+                
+                $totalRevenue += $revenue;
+                $totalTicketsSold += $ticketsSold;
+            }
+            
+            $data = [
+                'organizer_name' => auth()->user()->name,
+                'organizer_email' => auth()->user()->email,
+                'generated_at' => now(),
+                'events' => $eventFinancials,
+                'total_events' => count($eventFinancials),
+                'total_tickets_sold' => $totalTicketsSold,
+                'total_revenue' => $totalRevenue,
+                'total_platform_fee' => $totalRevenue * 0.1,
+                'total_net_income' => $totalRevenue * 0.9,
+            ];
+            
+            // Tampilkan halaman laporan yang bisa di-print (tanpa DomPDF)
+            return view('dashboard-organizer.report-pdf', $data);
+        })->name('organizer.report.export.pdf');
     });
 
     // ========================================
@@ -507,11 +589,23 @@ Route::middleware('auth')->group(function () {
         })->name('payment.process');
 
         Route::get('/my-tickets', function () {
-            $myTickets = \App\Models\Eticket::with(['ticket.event'])
+            $myTickets = \App\Models\Eticket::with(['ticket.event', 'transaction'])
                 ->where('user_id', auth()->id())
                 ->latest()
                 ->get();
             return view('dashboard-customer.my-tickets', compact('myTickets'));
         })->name('my-tickets');
+        
+        // ========================================
+        // PRINT E-TICKET
+        // ========================================
+        Route::get('/ticket/{code}/print', function ($code) {
+            $eticket = \App\Models\Eticket::with(['ticket.event', 'transaction'])
+                ->where('ticket_code', $code)
+                ->where('user_id', auth()->id())
+                ->firstOrFail();
+            
+            return view('dashboard-customer.ticket-print', compact('eticket'));
+        })->name('ticket.print');
     });
 });
