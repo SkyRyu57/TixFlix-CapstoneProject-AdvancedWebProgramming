@@ -136,11 +136,57 @@ Route::middleware('auth')->group(function () {
 
     // ========================================
     // ADMIN DASHBOARD
-    // ========================================
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', function () {
-            return view('dashboard-admin.admin');
-        })->name('admin.dashboard');
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        
+        // Dashboard utama dengan data real
+        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/events/pending', [App\Http\Controllers\Admin\EventController::class, 'pending'])->name('events.pending');
+        Route::post('/events/{event}/approve', [App\Http\Controllers\Admin\EventController::class, 'approve'])->name('events.approve');
+        Route::post('/events/{event}/reject', [App\Http\Controllers\Admin\EventController::class, 'reject'])->name('events.reject');
+        Route::get('/events', [App\Http\Controllers\Admin\EventController::class, 'index'])->name('events.index');
+        Route::get('/events/{event}', [App\Http\Controllers\Admin\EventController::class, 'show'])->name('events.show');
+        
+        Route::get('/transactions', [App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
+        Route::get('/transactions/{transaction}', [App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
+        Route::patch('/transactions/{transaction}/status', [App\Http\Controllers\Admin\TransactionController::class, 'updateStatus'])->name('transactions.update-status');
+        
+        Route::get('/waiting-lists', [App\Http\Controllers\Admin\WaitingListController::class, 'index'])->name('waiting-lists.index');
+        Route::get('/waiting-lists/event/{event}', [App\Http\Controllers\Admin\WaitingListController::class, 'byEvent'])->name('waiting-lists.by-event');
+        
+        // Waiting List Management (tambahan)
+        Route::post('/waiting-lists/{waiting}/invite', [App\Http\Controllers\Admin\WaitingListController::class, 'invite'])->name('waiting-lists.invite');
+        Route::post('/waiting-lists/event/{event}/invite-next', [App\Http\Controllers\Admin\WaitingListController::class, 'inviteNext'])->name('waiting-lists.invite-next');
+        // ==================================================
+        // ROUTE UNTUK VIEW SAMPLE (biar ga error karena dipanggil)
+        // ==================================================
+        Route::get('/charts', function () {
+            return view('dashboard-admin.chart');
+        })->name('charts');
+
+        Route::get('/forms', function () {
+            return view('dashboard-admin.form');
+        })->name('forms');
+
+        Route::get('/tables', function () {
+            return view('dashboard-admin.table');
+        })->name('tables');
+
+        Route::get('/widgets', function () {
+            return view('dashboard-admin.widget');
+        })->name('widgets');
+
+        Route::get('/elements', function () {
+            return view('dashboard-admin.element');
+        })->name('elements');
+
+        Route::get('/typography', function () {
+            return view('dashboard-admin.typography');
+        })->name('typography');
+
+        Route::get('/buttons', function () {
+            return view('dashboard-admin.button');
+        })->name('buttons');
     });
 
     // ========================================
