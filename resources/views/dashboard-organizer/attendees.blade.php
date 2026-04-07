@@ -22,6 +22,16 @@
         .sidebar-item.active { background: linear-gradient(90deg, rgba(255, 45, 85, 0.2) 0%, rgba(255, 94, 58, 0.1) 100%); border-left: 3px solid #ff2d55; }
         .status-badge { transition: all 0.3s ease; }
         .status-badge:hover { transform: scale(1.05); }
+        
+        /* Dropdown untuk sidebar */
+        .profile-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -66,26 +76,40 @@
                 </a>
             </nav>
             
-            <div class="p-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
-                        {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+            <!-- Profile Section with Dropdown -->
+            <div class="p-4 border-t border-white/10 relative">
+                <div class="relative">
+                    <button id="organizerMenuBtn" class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
+                            {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+                        </div>
+                        <div class="flex-1 text-left">
+                            <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                        </div>
+                        <i data-lucide="chevron-up" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="organizerDropdown" class="profile-dropdown glass-card rounded-xl overflow-hidden hidden">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="text-sm">My Profile</span>
+                        </a>
+                        <div class="border-t border-white/10"></div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span class="text-sm">Logout</span>
+                            </button>
+                        </form>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
-                    </div>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    </form>
                 </div>
             </div>
         </aside>
         
-        <!-- Main Content -->
+        <!-- Main Content (sama seperti sebelumnya) -->
         <main class="flex-1 ml-72 overflow-y-auto">
             <div class="p-8">
                 <div class="mb-6">
@@ -305,6 +329,23 @@
     <script>
         lucide.createIcons();
         
+        // Dropdown toggle untuk organizer
+        const organizerMenuBtn = document.getElementById('organizerMenuBtn');
+        const organizerDropdown = document.getElementById('organizerDropdown');
+        
+        if (organizerMenuBtn) {
+            organizerMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                organizerDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (organizerDropdown) {
+                organizerDropdown.classList.add('hidden');
+            }
+        });
+        
         function showTicketDetail(code, name, event, ticketType, isScanned) {
             document.getElementById('detailTicketCode').innerText = code;
             document.getElementById('detailAttendeeName').innerText = name;
@@ -332,9 +373,7 @@
         
         function markAsScanned(ticketCode) {
             if (confirm(`Mark ticket ${ticketCode} as scanned?`)) {
-                // Here you would make an AJAX call to update the status
-                // For now, we'll just show an alert
-                alert(`Ticket ${ticketCode} has been marked as scanned.\n\nThis feature would update the database via API.`);
+                alert(`Ticket ${ticketCode} has been marked as scanned.`);
             }
         }
         

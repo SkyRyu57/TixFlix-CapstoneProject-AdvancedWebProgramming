@@ -24,6 +24,16 @@
         input:focus, select:focus, textarea:focus { border-color: #ff2d55; outline: none; box-shadow: 0 0 0 2px rgba(255, 45, 85, 0.2); }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: linear-gradient(145deg, rgba(30, 30, 40, 0.95) 0%, rgba(15, 15, 20, 0.98) 100%); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 24px; max-width: 500px; width: 90%; position: relative; }
+        
+        /* Dropdown untuk sidebar */
+        .profile-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -125,21 +135,35 @@
                 </a>
             </nav>
             
-            <div class="p-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
-                        {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+            <!-- Profile Section with Dropdown -->
+            <div class="p-4 border-t border-white/10 relative">
+                <div class="relative">
+                    <button id="organizerMenuBtn" class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
+                            {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+                        </div>
+                        <div class="flex-1 text-left">
+                            <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                        </div>
+                        <i data-lucide="chevron-up" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="organizerDropdown" class="profile-dropdown glass-card rounded-xl overflow-hidden hidden">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="text-sm">My Profile</span>
+                        </a>
+                        <div class="border-t border-white/10"></div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span class="text-sm">Logout</span>
+                            </button>
+                        </form>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
-                    </div>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    </form>
                 </div>
             </div>
         </aside>
@@ -189,7 +213,7 @@
                                     <th class="px-6 py-4">Sold</th>
                                     <th class="px-6 py-4">Available</th>
                                     <th class="px-6 py-4">Actions</th>
-                                 </tr>
+                                </tr>
                             </thead>
                             <tbody>
                                 @forelse($tickets as $ticket)
@@ -317,6 +341,23 @@
     
     <script>
         lucide.createIcons();
+        
+        // Dropdown toggle untuk organizer
+        const organizerMenuBtn = document.getElementById('organizerMenuBtn');
+        const organizerDropdown = document.getElementById('organizerDropdown');
+        
+        if (organizerMenuBtn) {
+            organizerMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                organizerDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (organizerDropdown) {
+                organizerDropdown.classList.add('hidden');
+            }
+        });
         
         function openAddTicketModal() {
             document.getElementById('modalTitle').innerText = 'Add New Ticket';

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Event - Organizer Dashboard</title>
+    <title>Event Detail - Organizer Dashboard</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,8 +20,16 @@
         .sidebar-item { transition: all 0.3s ease; }
         .sidebar-item:hover { background: rgba(255, 45, 85, 0.1); transform: translateX(5px); }
         .sidebar-item.active { background: linear-gradient(90deg, rgba(255, 45, 85, 0.2) 0%, rgba(255, 94, 58, 0.1) 100%); border-left: 3px solid #ff2d55; }
-        input, select, textarea { transition: all 0.3s ease; }
-        input:focus, select:focus, textarea:focus { border-color: #ff2d55; outline: none; box-shadow: 0 0 0 2px rgba(255, 45, 85, 0.2); }
+        
+        /* Dropdown untuk sidebar */
+        .profile-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -66,21 +74,35 @@
                 </a>
             </nav>
             
-            <div class="p-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
-                        {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+            <!-- Profile Section with Dropdown -->
+            <div class="p-4 border-t border-white/10 relative">
+                <div class="relative">
+                    <button id="organizerMenuBtn" class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
+                            {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+                        </div>
+                        <div class="flex-1 text-left">
+                            <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                        </div>
+                        <i data-lucide="chevron-up" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="organizerDropdown" class="profile-dropdown glass-card rounded-xl overflow-hidden hidden">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="text-sm">My Profile</span>
+                        </a>
+                        <div class="border-t border-white/10"></div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span class="text-sm">Logout</span>
+                            </button>
+                        </form>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
-                    </div>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    </form>
                 </div>
             </div>
         </aside>
@@ -93,120 +115,158 @@
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </a>
                     <div>
-                        <h1 class="text-3xl font-bold">Edit Event</h1>
-                        <p class="text-gray-400 mt-1">Update your event details</p>
+                        <h1 class="text-3xl font-bold">Event Details</h1>
+                        <p class="text-gray-400 mt-1">{{ $event->title }}</p>
                     </div>
                 </div>
                 
-                <form action="{{ route('organizer.event.update', $event->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                    @csrf
-                    @method('PUT')
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                                <i data-lucide="ticket" class="w-6 h-6 text-green-400"></i>
+                            </div>
+                            <span class="text-2xl font-bold">{{ number_format($ticketsSold) }}</span>
+                        </div>
+                        <h3 class="text-gray-400 text-sm">Tickets Sold</h3>
+                    </div>
                     
                     <div class="glass-card rounded-2xl p-6">
-                        <h2 class="text-xl font-bold mb-6">Basic Information</h2>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                <i data-lucide="wallet" class="w-6 h-6 text-yellow-400"></i>
+                            </div>
+                            <span class="text-2xl font-bold">Rp {{ number_format($revenue, 0, ',', '.') }}</span>
+                        </div>
+                        <h3 class="text-gray-400 text-sm">Total Revenue</h3>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                <i data-lucide="calendar" class="w-6 h-6 text-blue-400"></i>
+                            </div>
+                            <span class="text-2xl font-bold">{{ \Carbon\Carbon::parse($event->start_date)->format('d M Y') }}</span>
+                        </div>
+                        <h3 class="text-gray-400 text-sm">Event Date</h3>
+                    </div>
+                </div>
+                
+                <!-- Event Banner -->
+                @if($event->banner)
+                    <div class="glass-card rounded-2xl overflow-hidden mb-8">
+                        <img src="{{ asset('storage/' . $event->banner) }}" alt="{{ $event->title }}" class="w-full h-64 object-cover">
+                    </div>
+                @endif
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <i data-lucide="info" class="w-5 h-5 text-[#ff2d55]"></i>
+                                Event Description
+                            </h2>
+                            <p class="text-gray-300 leading-relaxed">{{ $event->description }}</p>
+                        </div>
                         
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- Event Title -->
-                            <div class="lg:col-span-2">
-                                <label class="block text-sm font-medium mb-2">Event Title *</label>
-                                <input type="text" name="title" required value="{{ old('title', $event->title) }}"
-                                       class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <i data-lucide="ticket" class="w-5 h-5 text-[#ff2d55]"></i>
+                                Ticket Types
+                            </h2>
+                            
+                            <div class="space-y-4">
+                                @forelse($tickets as $ticket)
+                                    @php
+                                        $sold = \App\Models\Eticket::where('ticket_id', $ticket->id)->count();
+                                        $percentage = $ticket->stock > 0 ? ($sold / $ticket->stock) * 100 : 0;
+                                    @endphp
+                                    <div class="p-4 rounded-xl bg-white/5">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h3 class="font-semibold">{{ $ticket->name }}</h3>
+                                                <p class="text-xs text-gray-500">{{ $ticket->description ?? 'No description' }}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-lg font-bold text-green-400">Rp {{ number_format($ticket->price, 0, ',', '.') }}</p>
+                                                <p class="text-xs text-gray-500">Stock: {{ $ticket->stock }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                                <span>Sold: {{ $sold }}</span>
+                                                <span>{{ number_format($percentage, 1) }}%</span>
+                                            </div>
+                                            <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                                <div class="h-full bg-gradient-to-r from-[#ff2d55] to-[#ff5e3a] rounded-full" style="width: {{ $percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-center text-gray-500 py-4">No tickets created yet</p>
+                                @endforelse
                             </div>
                             
-                            <!-- Category -->
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Category *</label>
-                                <select name="category_id" required class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
-                                    <option value="">Select Category</option>
-                                    @foreach($categories as $category)
-                                        <option value="{{ $category->id }}" {{ $event->category_id == $category->id ? 'selected' : '' }}>
-                                            {{ $category->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            
-                            <!-- Status -->
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Status *</label>
-                                <select name="status" required class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
-                                    <option value="draft" {{ $event->status == 'draft' ? 'selected' : '' }}>Draft (Not visible to public)</option>
-                                    <option value="published" {{ $event->status == 'published' ? 'selected' : '' }}>Published (Visible to public)</option>
-                                </select>
+                            <div class="mt-4 pt-4 border-t border-white/10">
+                                <a href="{{ route('organizer.event.tickets', $event->id) }}" class="inline-flex items-center gap-2 text-[#ff2d55] hover:text-white transition-colors">
+                                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                    Manage Tickets
+                                </a>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="glass-card rounded-2xl p-6">
-                        <h2 class="text-xl font-bold mb-6">Event Details</h2>
+                    <div class="space-y-6">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-[#ff2d55]"></i>
+                                Location
+                            </h3>
+                            <p class="text-gray-300">{{ $event->location }}</p>
+                        </div>
                         
-                        <div class="space-y-6">
-                            <!-- Description -->
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Description *</label>
-                                <textarea name="description" rows="6" required 
-                                          class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">{{ old('description', $event->description) }}</textarea>
-                            </div>
-                            
-                            <!-- Location -->
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Location *</label>
-                                <input type="text" name="location" required value="{{ old('location', $event->location) }}"
-                                       class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Start Date -->
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Start Date & Time *</label>
-                                    <input type="datetime-local" name="start_date" required 
-                                           value="{{ \Carbon\Carbon::parse($event->start_date)->format('Y-m-d\TH:i') }}"
-                                           class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-4 h-4 text-[#ff2d55]"></i>
+                                Event Schedule
+                            </h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Start Date:</span>
+                                    <span>{{ \Carbon\Carbon::parse($event->start_date)->format('d M Y, H:i') }} WIB</span>
                                 </div>
-                                
-                                <!-- End Date -->
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">End Date & Time *</label>
-                                    <input type="datetime-local" name="end_date" required 
-                                           value="{{ \Carbon\Carbon::parse($event->end_date)->format('Y-m-d\TH:i') }}"
-                                           class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">End Date:</span>
+                                    <span>{{ \Carbon\Carbon::parse($event->end_date)->format('d M Y, H:i') }} WIB</span>
                                 </div>
-                            </div>
-                            
-                            <!-- Banner Image -->
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Event Banner</label>
-                                
-                                @if($event->banner)
-                                    <div class="mb-4">
-                                        <p class="text-sm text-gray-400 mb-2">Current Banner:</p>
-                                        <img src="{{ asset('storage/' . $event->banner) }}" class="max-h-48 rounded-lg" alt="Current banner">
-                                    </div>
-                                @endif
-                                
-                                <div class="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:border-[#ff2d55] transition-colors cursor-pointer" id="bannerUpload">
-                                    <input type="file" name="banner" accept="image/*" class="hidden" id="bannerInput">
-                                    <i data-lucide="upload" class="w-10 h-10 text-gray-400 mx-auto mb-2"></i>
-                                    <p class="text-gray-400 text-sm">Click to upload new banner (optional)</p>
-                                    <p class="text-gray-500 text-xs mt-1">PNG, JPG, GIF up to 2MB</p>
-                                    <div id="bannerPreview" class="mt-4 hidden">
-                                        <img id="previewImage" class="max-h-48 mx-auto rounded-lg" alt="Preview">
-                                    </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Status:</span>
+                                    <span class="px-2 py-0.5 rounded-full text-xs {{ $event->status == 'published' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400' }}">
+                                        {{ $event->status == 'published' ? 'Published' : 'Draft' }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
+                        
+                        <div class="glass-card rounded-2xl p-6">
+                            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                                <i data-lucide="settings" class="w-4 h-4 text-[#ff2d55]"></i>
+                                Actions
+                            </h3>
+                            <div class="space-y-2">
+                                <a href="{{ route('organizer.event.edit', $event->id) }}" class="flex items-center gap-2 w-full px-4 py-2 bg-white/10 hover:bg-yellow-500/20 rounded-lg transition-colors">
+                                    <i data-lucide="edit" class="w-4 h-4"></i>
+                                    Edit Event
+                                </a>
+                                <a href="{{ route('organizer.event.tickets', $event->id) }}" class="flex items-center gap-2 w-full px-4 py-2 bg-white/10 hover:bg-purple-500/20 rounded-lg transition-colors">
+                                    <i data-lucide="ticket" class="w-4 h-4"></i>
+                                    Manage Tickets
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="flex justify-end gap-3">
-                        <a href="{{ route('organizer.events') }}" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold transition-colors">
-                            Cancel
-                        </a>
-                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-[#ff2d55] to-[#ff5e3a] rounded-xl font-semibold hover:shadow-lg transition-all">
-                            <i data-lucide="save" class="w-4 h-4 inline mr-2"></i>
-                            Update Event
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </main>
     </div>
@@ -214,47 +274,20 @@
     <script>
         lucide.createIcons();
         
-        const bannerUpload = document.getElementById('bannerUpload');
-        const bannerInput = document.getElementById('bannerInput');
-        const bannerPreview = document.getElementById('bannerPreview');
-        const previewImage = document.getElementById('previewImage');
+        // Dropdown toggle untuk organizer
+        const organizerMenuBtn = document.getElementById('organizerMenuBtn');
+        const organizerDropdown = document.getElementById('organizerDropdown');
         
-        bannerUpload.addEventListener('click', () => {
-            bannerInput.click();
-        });
+        if (organizerMenuBtn) {
+            organizerMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                organizerDropdown.classList.toggle('hidden');
+            });
+        }
         
-        bannerInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewImage.src = event.target.result;
-                    bannerPreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(e.target.files[0]);
-            }
-        });
-        
-        bannerUpload.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            bannerUpload.classList.add('border-[#ff2d55]', 'bg-[#ff2d55]/5');
-        });
-        
-        bannerUpload.addEventListener('dragleave', () => {
-            bannerUpload.classList.remove('border-[#ff2d55]', 'bg-[#ff2d55]/5');
-        });
-        
-        bannerUpload.addEventListener('drop', (e) => {
-            e.preventDefault();
-            bannerUpload.classList.remove('border-[#ff2d55]', 'bg-[#ff2d55]/5');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                bannerInput.files = e.dataTransfer.files;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewImage.src = event.target.result;
-                    bannerPreview.classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
+        document.addEventListener('click', function() {
+            if (organizerDropdown) {
+                organizerDropdown.classList.add('hidden');
             }
         });
     </script>

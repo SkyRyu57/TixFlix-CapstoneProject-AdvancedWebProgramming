@@ -107,6 +107,16 @@
             background: rgba(255, 45, 85, 0.3);
             transform: rotate(90deg);
         }
+        
+        /* Dropdown styles */
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            min-width: 200px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100 font-sans antialiased min-h-screen selection:bg-[#ff2d55] selection:text-white pb-20">
@@ -124,7 +134,6 @@
                 
                 <div id="qrCodeContainer" class="bg-white p-4 rounded-2xl inline-block mb-4">
                     <div id="qrCode" class="w-48 h-48 flex items-center justify-center">
-                        <!-- QR Code akan di-generate di sini -->
                         <div class="animate-pulse text-gray-400">Loading QR...</div>
                     </div>
                 </div>
@@ -147,7 +156,7 @@
     <nav class="sticky top-0 z-50 glass-panel border-b border-white/10 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
-                <div class="flex items-center gap-3 cursor-pointer group">
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.href='{{ route('dashboard') }}'">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center shadow-lg shadow-[#ff2d55]/30 group-hover:scale-105 transition-transform duration-300">
                         <i data-lucide="ticket" class="w-6 h-6 text-white transform -rotate-12"></i>
                     </div>
@@ -174,26 +183,67 @@
                 </div>
 
                 <div class="flex items-center gap-2 md:gap-4">
-                    <button class="p-2 text-gray-400 hover:text-white transition-colors relative group hidden sm:block">
-                        <i data-lucide="bell" class="w-5 h-5"></i>
-                        <span class="absolute top-2 right-2 w-2 h-2 bg-[#ff2d55] rounded-full border border-[#0b0b0f]"></span>
-                    </button>
-                    
-                    <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
-                        <div class="hidden md:block text-right">
-                            <div class="text-sm font-semibold">{{ auth()->user()->name ?? 'Guest User' }}</div>
-                            <div class="text-xs text-gray-400">Event Explorer</div>
-                        </div>
-                        <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors cursor-pointer shadow-lg shadow-[#ff2d55]/20">
-                            {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
-                        </div>
+                    <!-- NOTIFICATION DROPDOWN -->
+                    <div class="relative">
+                        <button id="notificationBtn" class="p-2 text-gray-400 hover:text-white transition-colors relative group">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-[#ff2d55] text-white text-xs rounded-full flex items-center justify-center hidden">
+                                0
+                            </span>
+                        </button>
                         
-                        <form action="{{ route('logout') }}" method="POST" class="ml-2">
-                            @csrf
-                            <button type="submit" class="p-2 bg-white/5 hover:bg-[#ff2d55]/10 text-gray-300 hover:text-[#ff2d55] rounded-xl transition-all duration-300" title="Logout">
-                                <i data-lucide="log-out" class="w-5 h-5"></i>
-                            </button>
-                        </form>
+                        <div id="notificationDropdown" class="absolute right-0 mt-2 w-80 glass-card rounded-xl overflow-hidden hidden z-50">
+                            <div class="p-3 border-b border-white/10 flex justify-between items-center">
+                                <h3 class="font-semibold">Notifikasi</h3>
+                                <button id="markAllReadBtn" class="text-xs text-[#ff2d55] hover:text-white transition-colors">
+                                    Tandai semua
+                                </button>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto">
+                                <div class="p-4 text-center text-gray-500">
+                                    <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
+                                    <p class="text-sm">Memuat notifikasi...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PROFILE DROPDOWN -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="focus:outline-none group">
+                            <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
+                                <div class="hidden md:block text-right">
+                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Guest User' }}</div>
+                                    <div class="text-xs text-gray-400">Event Explorer</div>
+                                </div>
+                                <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors shadow-lg shadow-[#ff2d55]/20">
+                                    {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <div id="userDropdown" class="dropdown-menu glass-card rounded-xl overflow-hidden hidden">
+                            <div class="p-3 border-b border-white/10">
+                                <p class="font-semibold text-sm">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                            </div>
+                            <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span class="text-sm">My Profile</span>
+                            </a>
+                            <a href="{{ route('my-tickets') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="ticket" class="w-4 h-4"></i>
+                                <span class="text-sm">My Tickets</span>
+                            </a>
+                            <div class="border-t border-white/10"></div>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span class="text-sm">Logout</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -202,6 +252,7 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-12">
         
+        <!-- Hero Section -->
         <section class="relative rounded-3xl overflow-hidden glass-card">
             <div class="absolute inset-0 bg-gradient-to-r from-[#0b0b0f] via-[#0b0b0f]/60 to-transparent z-10 pointer-events-none"></div>
             <div class="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-900 via-[#0b0b0f] to-[#0b0b0f] pointer-events-none"></div>
@@ -240,7 +291,7 @@
             </div>
         </section>
 
-        {{-- Explore Categories Section --}}
+        <!-- Explore Categories Section -->
         <section>
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold flex items-center gap-2">
@@ -253,10 +304,8 @@
                 @foreach($categories as $category)
                     @php
                         $categoryName = strtolower($category->name);
-                        $categorySlug = strtolower($category->slug ?? $category->name);
                         $routeName = '';
                         
-                        // Tentukan route berdasarkan nama kategori
                         if (Str::contains($categoryName, 'konser') || Str::contains($categoryName, 'music') || Str::contains($categoryName, 'musik')) {
                             $routeName = route('concerts');
                         } elseif (Str::contains($categoryName, 'festival')) {
@@ -301,7 +350,7 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {{-- Trending Now Section --}}
+            <!-- Trending Now Section -->
             <section class="lg:col-span-2">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold flex items-center gap-2">
@@ -316,12 +365,10 @@
                         <a href="{{ url('/events/' . $event->id) }}" 
                            class="glass-card rounded-2xl overflow-hidden group cursor-pointer relative block transform hover:-translate-y-1 transition-all duration-300">
 
-                            <!-- Rating -->
                             <div class="absolute top-3 right-3 z-20 glass-panel px-3 py-1.5 rounded-full text-xs font-bold text-white flex items-center gap-1 pointer-events-none">
                                 <i data-lucide="star" class="w-3 h-3 text-yellow-400 fill-yellow-400"></i> 4.8
                             </div>
 
-                            <!-- Banner -->
                             <div class="aspect-video relative overflow-hidden bg-[#1e1e28]">
                                 @if($event->banner)
                                     <img 
@@ -335,11 +382,9 @@
                                     </div>
                                 @endif
 
-                                <!-- Gradient overlay -->
                                 <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0b0b0f] to-transparent z-10 pointer-events-none"></div>
                             </div>
 
-                            <!-- Content -->
                             <div class="p-5 relative z-20 -mt-6">
                                 <span class="text-xs font-bold tracking-wider text-[#6a5af9] uppercase mb-1 block">
                                     {{ $event->category->name ?? 'Event' }}
@@ -370,7 +415,6 @@
                                         @endif
                                     </span>
 
-                                    <!-- Arrow -->
                                     <div class="bg-white/10 group-hover:bg-[#6a5af9] text-white p-2.5 rounded-xl transition-colors duration-300">
                                         <i data-lucide="arrow-right" class="w-5 h-5"></i>
                                     </div>
@@ -385,7 +429,7 @@
                 </div>
             </section>
 
-            {{-- Next Up Section --}}
+            <!-- Next Up Section -->
             <section class="lg:col-span-1">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold flex items-center gap-2">
@@ -394,7 +438,6 @@
                     <a href="{{ route('my-tickets') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">View All</a>
                 </div>
                 
-                {{-- Ambil tiket user yang akan datang (next upcoming) --}}
                 @php
                     $upcomingTickets = App\Models\Eticket::with(['ticket.event'])
                         ->where('user_id', auth()->id())
@@ -457,7 +500,6 @@
                             </div>
                         </div>
                         
-                        {{-- Decorative circles --}}
                         <div class="absolute left-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
                         <div class="absolute right-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
                     </div>
@@ -473,7 +515,6 @@
                     </div>
                 @endforelse
 
-                {{-- Hitung total tiket yang akan datang --}}
                 @php
                     $totalUpcoming = App\Models\Eticket::where('user_id', auth()->id())
                         ->whereHas('ticket.event', function($query) {
@@ -496,7 +537,167 @@
     <script>
         lucide.createIcons();
 
-        // Modal functions
+        // ========================================
+        // PROFILE DROPDOWN
+        // ========================================
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+        
+        // ========================================
+        // NOTIFICATION SYSTEM
+        // ========================================
+        let notificationBtn = document.getElementById('notificationBtn');
+        let notificationDropdown = document.getElementById('notificationDropdown');
+        let notificationList = document.getElementById('notificationList');
+        let notificationBadge = document.getElementById('notificationBadge');
+
+        function loadNotifications() {
+            fetch('{{ route("notifications.get") }}')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationBadge(data.unread_count);
+                    renderNotifications(data.notifications);
+                })
+                .catch(error => console.error('Error loading notifications:', error));
+        }
+
+        function updateNotificationBadge(count) {
+            if (count > 0) {
+                notificationBadge.textContent = count > 9 ? '9+' : count;
+                notificationBadge.classList.remove('hidden');
+            } else {
+                notificationBadge.classList.add('hidden');
+            }
+        }
+
+        function renderNotifications(notifications) {
+            if (!notifications || notifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div class="p-6 text-center text-gray-500">
+                        <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p class="text-sm">Tidak ada notifikasi</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            let html = '';
+            notifications.forEach(notif => {
+                const iconColor = notif.type === 'success' ? 'text-green-400' : 
+                                 (notif.type === 'warning' ? 'text-yellow-400' : 
+                                 (notif.type === 'error' ? 'text-red-400' : 'text-blue-400'));
+                const iconName = notif.type === 'success' ? 'check-circle' : 
+                                (notif.type === 'warning' ? 'alert-triangle' : 
+                                (notif.type === 'error' ? 'alert-circle' : 'bell'));
+                
+                html += `
+                    <div class="notification-item p-3 hover:bg-white/5 transition-colors border-b border-white/5 cursor-pointer ${!notif.is_read ? 'bg-[#ff2d55]/5' : ''}" 
+                         data-id="${notif.id}" 
+                         data-link="${notif.link || '#'}">
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold">${escapeHtml(notif.title)}</p>
+                                <p class="text-xs text-gray-400 mt-1">${escapeHtml(notif.message)}</p>
+                                <p class="text-xs text-gray-500 mt-1">${notif.time_ago}</p>
+                            </div>
+                            <button class="delete-notif text-gray-500 hover:text-red-400 transition" data-id="${notif.id}">
+                                <i data-lucide="x" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            notificationList.innerHTML = html;
+            lucide.createIcons();
+            
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (e.target.closest('.delete-notif')) return;
+                    const id = this.dataset.id;
+                    const link = this.dataset.link;
+                    
+                    fetch(`/notifications/${id}/read`, { 
+                        method: 'POST', 
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+                    }).then(() => {
+                        if (link && link !== '#') {
+                            window.location.href = link;
+                        } else {
+                            loadNotifications();
+                        }
+                    });
+                });
+            });
+            
+            document.querySelectorAll('.delete-notif').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    if (confirm('Hapus notifikasi ini?')) {
+                        fetch(`/notifications/${id}`, { 
+                            method: 'DELETE', 
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+                        }).then(() => loadNotifications());
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('hidden');
+                if (!notificationDropdown.classList.contains('hidden')) {
+                    loadNotifications();
+                }
+            });
+        }
+
+        document.getElementById('markAllReadBtn')?.addEventListener('click', function() {
+            fetch('{{ route("notifications.readAll") }}', { 
+                method: 'POST', 
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+            }).then(() => loadNotifications());
+        });
+
+        document.addEventListener('click', function() {
+            if (notificationDropdown) {
+                notificationDropdown.classList.add('hidden');
+            }
+        });
+
+        setTimeout(() => {
+            loadNotifications();
+        }, 1000);
+
+        // ========================================
+        // QR CODE MODAL FUNCTIONS
+        // ========================================
         let currentQRCode = null;
         
         function showQR(ticketCode, eventTitle) {
@@ -506,7 +707,6 @@
             
             ticketCodeEl.textContent = ticketCode;
             
-            // Generate QR Code
             qrContainer.innerHTML = '';
             QRCode.toCanvas(qrContainer, ticketCode, {
                 width: 200,
@@ -544,7 +744,6 @@
             link.click();
         }
 
-        // Close modal with ESC key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeQRModal();

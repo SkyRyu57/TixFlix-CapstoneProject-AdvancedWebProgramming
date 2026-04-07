@@ -35,6 +35,16 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        
+        /* Dropdown styles */
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            min-width: 200px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100 font-sans antialiased min-h-screen selection:bg-[#ff2d55] selection:text-white">
@@ -63,22 +73,49 @@
                     <a href="{{ route('my-tickets') }}" class="text-gray-400 hover:text-white transition-colors">My Tickets</a>
                 </div>
 
-                <div class="flex items-center gap-4">
-                    <div class="relative flex items-center gap-3">
-                        <div class="hidden md:block text-right">
-                            <div class="text-sm font-semibold">{{ auth()->user()->name ?? 'Guest' }}</div>
-                            <div class="text-xs text-gray-400">Event Explorer</div>
-                        </div>
-                        <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold">
-                            {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
-                        </div>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button class="p-2 text-gray-400 hover:text-white transition-colors relative group hidden sm:block">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-[#ff2d55] rounded-full border border-[#0b0b0f]"></span>
+                    </button>
+                    
+                    <!-- Profile Dropdown -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="focus:outline-none group">
+                            <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
+                                <div class="hidden md:block text-right">
+                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Guest User' }}</div>
+                                    <div class="text-xs text-gray-400">Event Explorer</div>
+                                </div>
+                                <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors shadow-lg shadow-[#ff2d55]/20">
+                                    {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
+                                </div>
+                            </div>
+                        </button>
                         
-                        <form action="{{ route('logout') }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 bg-white/5 hover:bg-[#ff2d55]/10 text-gray-300 hover:text-[#ff2d55] rounded-xl transition-all" title="Logout">
-                                <i data-lucide="log-out" class="w-5 h-5"></i>
-                            </button>
-                        </form>
+                        <!-- Dropdown Menu -->
+                        <div id="userDropdown" class="dropdown-menu glass-card rounded-xl overflow-hidden hidden">
+                            <div class="p-3 border-b border-white/10">
+                                <p class="font-semibold text-sm">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                            </div>
+                            <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span class="text-sm">My Profile</span>
+                            </a>
+                            <a href="{{ route('my-tickets') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="ticket" class="w-4 h-4"></i>
+                                <span class="text-sm">My Tickets</span>
+                            </a>
+                            <div class="border-t border-white/10"></div>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span class="text-sm">Logout</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -195,6 +232,23 @@
 
     <script>
         lucide.createIcons();
+        
+        // Dropdown toggle
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>

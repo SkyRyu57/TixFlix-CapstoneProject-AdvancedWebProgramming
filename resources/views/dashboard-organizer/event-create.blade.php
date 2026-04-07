@@ -22,6 +22,16 @@
         .sidebar-item.active { background: linear-gradient(90deg, rgba(255, 45, 85, 0.2) 0%, rgba(255, 94, 58, 0.1) 100%); border-left: 3px solid #ff2d55; }
         input, select, textarea { transition: all 0.3s ease; }
         input:focus, select:focus, textarea:focus { border-color: #ff2d55; outline: none; box-shadow: 0 0 0 2px rgba(255, 45, 85, 0.2); }
+        
+        /* Dropdown untuk sidebar */
+        .profile-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            width: 100%;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -66,21 +76,35 @@
                 </a>
             </nav>
             
-            <div class="p-4 border-t border-white/10">
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
-                        {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+            <!-- Profile Section with Dropdown -->
+            <div class="p-4 border-t border-white/10 relative">
+                <div class="relative">
+                    <button id="organizerMenuBtn" class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center font-bold">
+                            {{ substr(auth()->user()->name ?? 'O', 0, 1) }}
+                        </div>
+                        <div class="flex-1 text-left">
+                            <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                        </div>
+                        <i data-lucide="chevron-up" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="organizerDropdown" class="profile-dropdown glass-card rounded-xl overflow-hidden hidden">
+                        <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            <span class="text-sm">My Profile</span>
+                        </a>
+                        <div class="border-t border-white/10"></div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span class="text-sm">Logout</span>
+                            </button>
+                        </form>
                     </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
-                    </div>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </button>
-                    </form>
                 </div>
             </div>
         </aside>
@@ -105,7 +129,6 @@
                         <h2 class="text-xl font-bold mb-6">Basic Information</h2>
                         
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- Event Title -->
                             <div class="lg:col-span-2">
                                 <label class="block text-sm font-medium mb-2">Event Title *</label>
                                 <input type="text" name="title" required 
@@ -113,7 +136,6 @@
                                        placeholder="e.g., Coldplay: Music of the Spheres Tour">
                             </div>
                             
-                            <!-- Category -->
                             <div>
                                 <label class="block text-sm font-medium mb-2">Category *</label>
                                 <select name="category_id" required class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
@@ -124,7 +146,6 @@
                                 </select>
                             </div>
                             
-                            <!-- Status -->
                             <div>
                                 <label class="block text-sm font-medium mb-2">Status *</label>
                                 <select name="status" required class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
@@ -139,7 +160,6 @@
                         <h2 class="text-xl font-bold mb-6">Event Details</h2>
                         
                         <div class="space-y-6">
-                            <!-- Description -->
                             <div>
                                 <label class="block text-sm font-medium mb-2">Description *</label>
                                 <textarea name="description" rows="6" required 
@@ -147,7 +167,6 @@
                                           placeholder="Describe your event..."></textarea>
                             </div>
                             
-                            <!-- Location -->
                             <div>
                                 <label class="block text-sm font-medium mb-2">Location *</label>
                                 <input type="text" name="location" required 
@@ -156,14 +175,12 @@
                             </div>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Start Date -->
                                 <div>
                                     <label class="block text-sm font-medium mb-2">Start Date & Time *</label>
                                     <input type="datetime-local" name="start_date" required 
                                            class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors">
                                 </div>
                                 
-                                <!-- End Date -->
                                 <div>
                                     <label class="block text-sm font-medium mb-2">End Date & Time *</label>
                                     <input type="datetime-local" name="end_date" required 
@@ -171,7 +188,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Banner Image -->
                             <div>
                                 <label class="block text-sm font-medium mb-2">Event Banner</label>
                                 <div class="border-2 border-dashed border-white/20 rounded-xl p-6 text-center hover:border-[#ff2d55] transition-colors cursor-pointer" id="bannerUpload">
@@ -204,6 +220,23 @@
     <script>
         lucide.createIcons();
         
+        // Dropdown toggle untuk organizer
+        const organizerMenuBtn = document.getElementById('organizerMenuBtn');
+        const organizerDropdown = document.getElementById('organizerDropdown');
+        
+        if (organizerMenuBtn) {
+            organizerMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                organizerDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (organizerDropdown) {
+                organizerDropdown.classList.add('hidden');
+            }
+        });
+        
         // Banner upload preview
         const bannerUpload = document.getElementById('bannerUpload');
         const bannerInput = document.getElementById('bannerInput');
@@ -225,7 +258,6 @@
             }
         });
         
-        // Drag and drop
         bannerUpload.addEventListener('dragover', (e) => {
             e.preventDefault();
             bannerUpload.classList.add('border-[#ff2d55]', 'bg-[#ff2d55]/5');

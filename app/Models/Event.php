@@ -58,4 +58,18 @@ class Event extends Model
     {
         return $this->hasMany(Ticket::class);
     }
+
+    // Relasi dengan reviews
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    // Update rating
+    public function updateRating()
+    {
+        $this->avg_rating = $this->reviews()->avg('rating') ?? 0;
+        $this->total_reviews = $this->reviews()->count();
+        $this->save();
+    }
 }
