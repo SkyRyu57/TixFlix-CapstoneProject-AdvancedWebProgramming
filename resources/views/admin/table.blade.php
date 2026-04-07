@@ -167,7 +167,7 @@
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <img class="rounded-circle me-lg-2" src="img/user.jpg" alt="" style="width: 40px; height: 40px;">
-                            <span class="d-none d-lg-inline-flex">John Doe</span>
+                            <span class="d-none d-lg-inline-flex">-name-</span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end bg-secondary border-0 rounded-0 rounded-bottom m-0">
                             <a href="#" class="dropdown-item">My Profile</a>
@@ -198,21 +198,21 @@
                                 <tbody>
                                     <tr>
                                         <th scope="row">1</th>
-                                        <td>John</td>
-                                        <td>Doe</td>
-                                        <td>jhon@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">2</th>
-                                        <td>Mark</td>
-                                        <td>Otto</td>
-                                        <td>mark@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">3</th>
-                                        <td>Jacob</td>
-                                        <td>Thornton</td>
-                                        <td>jacob@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -233,21 +233,21 @@
                                 <tbody>
                                     <tr>
                                         <th scope="row">1</th>
-                                        <td>John</td>
-                                        <td>Doe</td>
-                                        <td>jhon@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">2</th>
-                                        <td>Mark</td>
-                                        <td>Otto</td>
-                                        <td>mark@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">3</th>
-                                        <td>Jacob</td>
-                                        <td>Thornton</td>
-                                        <td>jacob@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -268,21 +268,21 @@
                                 <tbody>
                                     <tr>
                                         <th scope="row">1</th>
-                                        <td>John</td>
-                                        <td>Doe</td>
-                                        <td>jhon@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">2</th>
-                                        <td>Mark</td>
-                                        <td>Otto</td>
-                                        <td>mark@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                     <tr>
                                         <th scope="row">3</th>
-                                        <td>Jacob</td>
-                                        <td>Thornton</td>
-                                        <td>jacob@email.com</td>
+                                        <td>-name-</td>
+                                        <td>-last-name-</td>
+                                        <td>test@email.com</td>
                                     </tr>
                                 </tbody>
                             </table>
