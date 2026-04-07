@@ -134,7 +134,7 @@
                 
                 <div id="qrCodeContainer" class="bg-white p-4 rounded-2xl inline-block mb-4">
                     <div id="qrCode" class="w-48 h-48 flex items-center justify-center">
-                        <div class="animate-pulse text-gray-400">Loading QR...</div>
+                        <div class="animate-pulse text-gray-400">Memuat QR...</div>
                     </div>
                 </div>
                 
@@ -142,7 +142,7 @@
                 
                 <button onclick="downloadQR()" class="mt-4 w-full glass-panel text-white py-3 rounded-xl font-bold text-sm hover:bg-white/10 transition-all duration-300">
                     <i data-lucide="download" class="w-4 h-4 inline-block mr-2"></i>
-                    Download QR
+                    Unduh QR
                 </button>
             </div>
         </div>
@@ -165,25 +165,25 @@
 
                 <div class="hidden md:flex space-x-8 items-center">
                     <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        Home
+                        Beranda
                         @if(request()->routeIs('dashboard')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
                     <a href="{{ route('concerts') }}" class="{{ request()->routeIs('concerts') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        Concerts
+                        Konser
                         @if(request()->routeIs('concerts')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
                     <a href="{{ route('festivals') }}" class="{{ request()->routeIs('festivals') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        Festivals
+                        Festival
                         @if(request()->routeIs('festivals')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
                     <a href="{{ route('my-tickets') }}" class="{{ request()->routeIs('my-tickets') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        My Tickets
+                        Tiket Saya
                         @if(request()->routeIs('my-tickets')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
                 </div>
 
                 <div class="flex items-center gap-2 md:gap-4">
-                    <!-- NOTIFICATION DROPDOWN -->
+                    <!-- NOTIFIKASI DROPDOWN -->
                     <div class="relative">
                         <button id="notificationBtn" class="p-2 text-gray-400 hover:text-white transition-colors relative group">
                             <i data-lucide="bell" class="w-5 h-5"></i>
@@ -208,13 +208,13 @@
                         </div>
                     </div>
                     
-                    <!-- PROFILE DROPDOWN -->
+                    <!-- PROFIL DROPDOWN -->
                     <div class="relative">
                         <button id="userMenuBtn" class="focus:outline-none group">
                             <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
                                 <div class="hidden md:block text-right">
-                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Guest User' }}</div>
-                                    <div class="text-xs text-gray-400">Event Explorer</div>
+                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Tamu' }}</div>
+                                    <div class="text-xs text-gray-400">Penjelajah Event</div>
                                 </div>
                                 <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors shadow-lg shadow-[#ff2d55]/20">
                                     {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
@@ -229,18 +229,18 @@
                             </div>
                             <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
                                 <i data-lucide="user" class="w-4 h-4"></i>
-                                <span class="text-sm">My Profile</span>
+                                <span class="text-sm">Profil Saya</span>
                             </a>
                             <a href="{{ route('my-tickets') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
                                 <i data-lucide="ticket" class="w-4 h-4"></i>
-                                <span class="text-sm">My Tickets</span>
+                                <span class="text-sm">Tiket Saya</span>
                             </a>
                             <div class="border-t border-white/10"></div>
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf
                                 <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
                                     <i data-lucide="log-out" class="w-4 h-4"></i>
-                                    <span class="text-sm">Logout</span>
+                                    <span class="text-sm">Keluar</span>
                                 </button>
                             </form>
                         </div>
@@ -261,14 +261,14 @@
                 <div class="w-full md:w-1/2 space-y-5 z-20">
                     <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-panel border border-[#6a5af9]/40 text-xs font-semibold text-gray-200 mb-1">
                         <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"></i>
-                        Platform Ticketing Event #1
+                        Platform Tiket Event #1
                     </div>
                     <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
                         Temukan Event <br/>
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#8e7aff] to-[#5946ea] drop-shadow-md">Terbaik Untukmu</span>
                     </h1>
                     <p class="text-gray-300 text-base leading-relaxed max-w-md font-medium">
-                        Jelajahi ribuan konser, festival, dan pameran menarik. Amankan tiketmu sekarang dan ciptakan momen tak terlupakan!
+                        Jelajahi ribuan konser, festival, dan pameran menarik. Dapatkan tiketmu sekarang dan ciptakan momen tak terlupakan!
                     </p>
                     <div class="pt-4 flex flex-wrap gap-3">
                         <button class="bg-[#5946ea] hover:bg-[#6a5af9] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(89,70,234,0.4)] transform hover:-translate-y-1 transition-all duration-300">
@@ -291,14 +291,14 @@
             </div>
         </section>
 
-        <!-- Explore Categories Section -->
+        <!-- Section Explore Kategori -->
         <section>
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold flex items-center gap-2">
                     <i data-lucide="compass" class="w-6 h-6 text-[#ff2d55]"></i>
-                    Explore Categories
+                    Jelajahi Kategori
                 </h2>
-                <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">All Categories</a>
+                <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Semua Kategori</a>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 @foreach($categories as $category)
@@ -324,20 +324,24 @@
                     <a href="{{ $routeName }}" 
                        class="glass-card hover:bg-white/5 p-6 rounded-2xl cursor-pointer group transition-all duration-300 hover:-translate-y-1 text-center flex flex-col items-center gap-3">
                         <div class="w-14 h-14 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                            @if(Str::contains(strtolower($category->name), 'konser') || Str::contains(strtolower($category->name), 'music') || Str::contains(strtolower($category->name), 'musik'))
+                            @if(Str::contains($categoryName, 'konser') || Str::contains($categoryName, 'music') || Str::contains($categoryName, 'musik'))
                                 <i data-lucide="mic-2" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'festival'))
+                            @elseif(Str::contains($categoryName, 'festival'))
                                 <i data-lucide="tent" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'olahraga') || Str::contains(strtolower($category->name), 'sport'))
-                                <i data-lucide="dribbble" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'pameran') || Str::contains(strtolower($category->name), 'exhibition'))
+                            @elseif(Str::contains($categoryName, 'olahraga') || Str::contains($categoryName, 'sport') || Str::contains($categoryName, 'sports'))
+                                <i data-lucide="trophy" class="w-7 h-7"></i>
+                            @elseif(Str::contains($categoryName, 'pameran') || Str::contains($categoryName, 'exhibition') || Str::contains($categoryName, 'seni'))
                                 <i data-lucide="palette" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'teknologi') || Str::contains(strtolower($category->name), 'technology'))
+                            @elseif(Str::contains($categoryName, 'teknologi') || Str::contains($categoryName, 'technology'))
                                 <i data-lucide="cpu" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'kuliner') || Str::contains(strtolower($category->name), 'culinary'))
+                            @elseif(Str::contains($categoryName, 'kuliner') || Str::contains($categoryName, 'culinary'))
                                 <i data-lucide="utensils" class="w-7 h-7"></i>
-                            @elseif(Str::contains(strtolower($category->name), 'workshop'))
+                            @elseif(Str::contains($categoryName, 'workshop'))
                                 <i data-lucide="graduation-cap" class="w-7 h-7"></i>
+                            @elseif(Str::contains($categoryName, 'teater'))
+                                <i data-lucide="theater" class="w-7 h-7"></i>
+                            @elseif(Str::contains($categoryName, 'seminar'))
+                                <i data-lucide="users" class="w-7 h-7"></i>
                             @else
                                 <i data-lucide="ticket" class="w-7 h-7"></i>
                             @endif
@@ -350,14 +354,14 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- Trending Now Section -->
+            <!-- Section Trending -->
             <section class="lg:col-span-2">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold flex items-center gap-2">
                         <i data-lucide="flame" class="w-6 h-6 text-[#ff5e3a]"></i>
-                        Trending Now
+                        Sedang Trending
                     </h2>
-                    <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">View All</a>
+                    <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -411,7 +415,7 @@
                                         @if($event->tickets && $event->tickets->count() > 0)
                                             Rp {{ number_format($event->tickets->min('price'), 0, ',', '.') }}
                                         @else
-                                            Sold Out
+                                            Habis Terjual
                                         @endif
                                     </span>
 
@@ -429,13 +433,13 @@
                 </div>
             </section>
 
-            <!-- Next Up Section -->
+            <!-- Section Event Selanjutnya -->
             <section class="lg:col-span-1">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="ticket" class="w-6 h-6 text-white"></i> Next Up
+                        <i data-lucide="ticket" class="w-6 h-6 text-white"></i> Event Selanjutnya
                     </h2>
-                    <a href="{{ route('my-tickets') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">View All</a>
+                    <a href="{{ route('my-tickets') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
                 </div>
                 
                 @php
@@ -453,7 +457,7 @@
                     @php
                         $event = $eticket->ticket->event;
                         $isTomorrow = \Carbon\Carbon::parse($event->start_date)->isTomorrow();
-                        $dateLabel = $isTomorrow ? 'TOMORROW' : \Carbon\Carbon::parse($event->start_date)->format('D, M d');
+                        $dateLabel = $isTomorrow ? 'BESOK' : \Carbon\Carbon::parse($event->start_date)->format('D, M d');
                     @endphp
                     
                     <div class="glass-card rounded-3xl p-6 relative overflow-hidden">
@@ -495,7 +499,7 @@
                                 </div>
                                 <button onclick="showQR('{{ $eticket->ticket_code }}', '{{ $event->title }}')" 
                                         class="text-[10px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors">
-                                    Show QR
+                                    Tampilkan QR
                                 </button>
                             </div>
                         </div>
@@ -526,7 +530,7 @@
                 @if($totalUpcoming > 1)
                     <div class="mt-4 p-4 rounded-xl border border-dashed border-white/20 text-center text-sm text-gray-400 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
                          onclick="window.location.href='{{ route('my-tickets') }}'">
-                        + You have {{ $totalUpcoming - 1 }} more upcoming {{ $totalUpcoming - 1 > 1 ? 'tickets' : 'ticket' }}
+                        + Anda memiliki {{ $totalUpcoming - 1 }} event mendatang lagi
                     </div>
                 @endif
             </section>
@@ -538,7 +542,7 @@
         lucide.createIcons();
 
         // ========================================
-        // PROFILE DROPDOWN
+        // DROPDOWN PROFIL
         // ========================================
         const userMenuBtn = document.getElementById('userMenuBtn');
         const userDropdown = document.getElementById('userDropdown');
@@ -557,7 +561,7 @@
         });
         
         // ========================================
-        // NOTIFICATION SYSTEM
+        // SISTEM NOTIFIKASI
         // ========================================
         let notificationBtn = document.getElementById('notificationBtn');
         let notificationDropdown = document.getElementById('notificationDropdown');
@@ -571,7 +575,7 @@
                     updateNotificationBadge(data.unread_count);
                     renderNotifications(data.notifications);
                 })
-                .catch(error => console.error('Error loading notifications:', error));
+                .catch(error => console.error('Error memuat notifikasi:', error));
         }
 
         function updateNotificationBadge(count) {
@@ -696,7 +700,7 @@
         }, 1000);
 
         // ========================================
-        // QR CODE MODAL FUNCTIONS
+        // FUNGSI MODAL QR CODE
         // ========================================
         let currentQRCode = null;
         
@@ -718,7 +722,7 @@
             }, function(error) {
                 if (error) {
                     console.error(error);
-                    qrContainer.innerHTML = '<div class="text-red-500">Error generating QR</div>';
+                    qrContainer.innerHTML = '<div class="text-red-500">Error membuat QR</div>';
                 }
             });
             
@@ -750,7 +754,7 @@
             }
         });
 
-        // Hide Spline logo
+        // Sembunyikan logo Spline
         window.addEventListener('load', function() {
             setTimeout(() => {
                 const splineViewer = document.querySelector('spline-viewer');
