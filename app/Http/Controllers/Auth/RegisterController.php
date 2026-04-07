@@ -17,25 +17,30 @@ class RegisterController extends Controller
         $request->validate([
             'name'         => 'required|string|max:255',
             'email'        => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'nullable|numeric|digits_between:10,15', // Validasi angka & panjang
-            'password'     => 'required|string|min:8|confirmed',
-            'role'         => 'required|in:admin,organizer,customer', // Pastikan sesuai Enum
-            'country'      => 'nullable|string|max:255',
+            'phone_number' => 'nullable|numeric|digits_between:10,15',
+            'password'     => 'required|string|min:6|confirmed',
+            'role'         => 'required|in:admin,organizer,customer',
         ]);
 
-        // 2. SIMPAN DATA KE DATABASE
+        // 2. SIMPAN DATA KE DATABASE (HAPUS COUNTRY)
         $user = User::create([
             'name'         => $request->name,
             'email'        => $request->email,
             'phone_number' => $request->phone_number,
             'password'     => Hash::make($request->password),
             'role'         => $request->role,
-            'created_at'   => Carbon::now(),
-            'updated_at'   => Carbon::now(),
-            'country'      => $request->country,
         ]);
 
-        // 3. AUTO LOGIN & REDIRECT
-        return redirect()->route('login');
+        // 3. AUTO LOGIN setelah registrasi
+        Auth::login($user);
+
+        // 4. REDIRECT BERDASARKAN ROLE
+        if ($user->role == 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role == 'organizer') {
+            return redirect()->route('organizer.dashboard');
+        } else {
+            return redirect()->route('dashboard');
+        }
     }
 }
