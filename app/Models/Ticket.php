@@ -22,4 +22,22 @@ class Ticket extends Model
     {
         return $this->belongsTo(Event::class);
     }
+
+    // Relasi dengan waiting list
+    public function waitingLists()
+    {
+        return $this->hasMany(WaitingList::class);
+    }
+
+    // Cek apakah ada yang waiting
+    public function hasWaitingList()
+    {
+        return $this->waitingLists()->where('status', 'waiting')->exists();
+    }
+
+    // Jumlah waiting list
+    public function waitingCount()
+    {
+        return $this->waitingLists()->where('status', 'waiting')->sum('quantity');
+    }
 }

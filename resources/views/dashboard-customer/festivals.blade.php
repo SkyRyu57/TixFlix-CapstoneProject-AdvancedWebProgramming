@@ -8,22 +8,48 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass-card { background: linear-gradient(145deg, rgba(30, 30, 40, 0.8) 0%, rgba(15, 15, 20, 0.9) 100%); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(8px); }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0b10; }
+        .glass-panel {
+            background: rgba(18, 18, 24, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card { 
+            background: linear-gradient(145deg, rgba(30, 30, 40, 0.8) 0%, rgba(15, 15, 20, 0.9) 100%); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); 
+            backdrop-filter: blur(8px); 
+        }
         .text-gradient {
             background: linear-gradient(135deg, #ff2d55 0%, #ff5e3a 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        
+        /* Dropdown styles */
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            min-width: 200px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100 font-sans antialiased min-h-screen">
 
+    <!-- Background Effects -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#ff2d55]/10 blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-[#6a5af9]/10 blur-[120px]"></div>
+    </div>
+
     <nav class="sticky top-0 z-50 glass-panel border-b border-white/10 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
-                <div class="flex items-center gap-3 cursor-pointer group">
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="window.location.href='{{ route('dashboard') }}'">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center shadow-lg shadow-[#ff2d55]/30 group-hover:scale-105 transition-transform duration-300">
                         <i data-lucide="ticket" class="w-6 h-6 text-white transform -rotate-12"></i>
                     </div>
@@ -55,21 +81,43 @@
                         <span class="absolute top-2 right-2 w-2 h-2 bg-[#ff2d55] rounded-full border border-[#0b0b0f]"></span>
                     </button>
                     
-                    <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
-                        <div class="hidden md:block text-right">
-                            <div class="text-sm font-semibold">{{ auth()->user()->name ?? 'Guest User' }}</div>
-                            <div class="text-xs text-gray-400">Event Explorer</div>
-                        </div>
-                        <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors cursor-pointer shadow-lg shadow-[#ff2d55]/20">
-                            {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
-                        </div>
+                    <!-- Profile Dropdown -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="focus:outline-none group">
+                            <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
+                                <div class="hidden md:block text-right">
+                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Guest User' }}</div>
+                                    <div class="text-xs text-gray-400">Event Explorer</div>
+                                </div>
+                                <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors shadow-lg shadow-[#ff2d55]/20">
+                                    {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
+                                </div>
+                            </div>
+                        </button>
                         
-                        <form action="{{ route('logout') }}" method="POST" class="ml-2">
-                            @csrf
-                            <button type="submit" class="p-2 bg-white/5 hover:bg-[#ff2d55]/10 text-gray-300 hover:text-[#ff2d55] rounded-xl transition-all duration-300" title="Logout">
-                                <i data-lucide="log-out" class="w-5 h-5"></i>
-                            </button>
-                        </form>
+                        <!-- Dropdown Menu -->
+                        <div id="userDropdown" class="dropdown-menu glass-card rounded-xl overflow-hidden hidden">
+                            <div class="p-3 border-b border-white/10">
+                                <p class="font-semibold text-sm">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                            </div>
+                            <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span class="text-sm">My Profile</span>
+                            </a>
+                            <a href="{{ route('my-tickets') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="ticket" class="w-4 h-4"></i>
+                                <span class="text-sm">My Tickets</span>
+                            </a>
+                            <div class="border-t border-white/10"></div>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span class="text-sm">Logout</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -112,6 +160,25 @@
         </div>
     </div>
 
-    <script>lucide.createIcons();</script>
+    <script>
+        lucide.createIcons();
+        
+        // Dropdown toggle
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+    </script>
 </body>
 </html>
