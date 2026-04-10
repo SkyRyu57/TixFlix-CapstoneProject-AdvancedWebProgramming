@@ -13,12 +13,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('ticket_id')->constrained()->onDelete('cascade');
             $table->integer('quantity')->default(1);
-            $table->enum('status', ['waiting', 'notified', 'expired', 'cancelled'])->default('waiting');
-            $table->timestamp('notified_at')->nullable();
+            $table->enum('status', ['waiting', 'notified'])->default('waiting');
             $table->timestamps();
-            
-            $table->unique(['user_id', 'ticket_id']);
-            $table->index('status');
         });
     }
 

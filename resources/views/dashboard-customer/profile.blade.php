@@ -39,6 +39,16 @@
             outline: none;
             box-shadow: 0 0 0 2px rgba(255, 45, 85, 0.2);
         }
+        
+        /* Dropdown styles */
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            min-width: 200px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -59,32 +69,85 @@
                     <span class="text-xl md:text-2xl font-bold tracking-tight">Tix<span class="text-gradient">flix</span></span>
                 </div>
 
+                <!-- NAVBAR MENU YANG SUDAH DIUPDATE -->
                 <div class="hidden md:flex space-x-8 items-center">
-                    <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-white transition-colors">Home</a>
-                    <a href="{{ route('concerts') }}" class="text-gray-400 hover:text-white transition-colors">Concerts</a>
-                    <a href="{{ route('festivals') }}" class="text-gray-400 hover:text-white transition-colors">Festivals</a>
-                    <a href="{{ route('my-tickets') }}" class="text-gray-400 hover:text-white transition-colors">My Tickets</a>
+                    <a href="{{ route('dashboard') }}" class="text-gray-400 hover:text-white transition-colors">
+                        Beranda
+                    </a>
+                    <a href="{{ route('events.list') }}" class="text-gray-400 hover:text-white transition-colors">
+                        Event
+                    </a>
+                    <a href="{{ route('my-tickets') }}" class="text-gray-400 hover:text-white transition-colors">
+                        Tiket Saya
+                    </a>
                     <a href="{{ route('profile') }}" class="text-[#ff2d55] font-medium relative group">
-                        Profile
+                        Profil Saya
                         <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span>
                     </a>
                 </div>
 
                 <div class="flex items-center gap-2 md:gap-4">
-                    <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
-                        <div class="hidden md:block text-right">
-                            <div class="text-sm font-semibold">{{ auth()->user()->name }}</div>
-                            <div class="text-xs text-gray-400">{{ auth()->user()->role == 'organizer' ? 'Organizer' : 'Event Explorer' }}</div>
+                    <!-- NOTIFIKASI DROPDOWN -->
+                    <div class="relative">
+                        <button id="notificationBtn" class="p-2 text-gray-400 hover:text-white transition-colors relative group">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="absolute -top-1 -right-1 w-5 h-5 bg-[#ff2d55] text-white text-xs rounded-full flex items-center justify-center hidden">
+                                0
+                            </span>
+                        </button>
+                        
+                        <div id="notificationDropdown" class="absolute right-0 mt-2 w-80 glass-card rounded-xl overflow-hidden hidden z-50">
+                            <div class="p-3 border-b border-white/10 flex justify-between items-center">
+                                <h3 class="font-semibold">Notifikasi</h3>
+                                <button id="markAllReadBtn" class="text-xs text-[#ff2d55] hover:text-white transition-colors">
+                                    Tandai semua
+                                </button>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto">
+                                <div class="p-4 text-center text-gray-500">
+                                    <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
+                                    <p class="text-sm">Memuat notifikasi...</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold">
-                            {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
+                    </div>
+                    
+                    <!-- PROFIL DROPDOWN -->
+                    <div class="relative">
+                        <button id="userMenuBtn" class="focus:outline-none group">
+                            <div class="relative flex items-center gap-3 md:pl-4 md:border-l border-white/10">
+                                <div class="hidden md:block text-right">
+                                    <div class="text-sm font-semibold group-hover:text-[#ff2d55] transition-colors">{{ auth()->user()->name ?? 'Tamu' }}</div>
+                                    <div class="text-xs text-gray-400">Penjelajah Event</div>
+                                </div>
+                                <div class="w-10 h-10 rounded-full border-2 border-[#1e1e28] bg-gradient-to-br from-[#ff2d55] to-[#ff5e3a] flex items-center justify-center text-white font-bold hover:border-[#ff2d55] transition-colors shadow-lg shadow-[#ff2d55]/20">
+                                    {{ substr(auth()->user()->name ?? 'G', 0, 1) }}
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <div id="userDropdown" class="dropdown-menu glass-card rounded-xl overflow-hidden hidden">
+                            <div class="p-3 border-b border-white/10">
+                                <p class="font-semibold text-sm">{{ auth()->user()->name }}</p>
+                                <p class="text-xs text-gray-400">{{ auth()->user()->email }}</p>
+                            </div>
+                            <a href="{{ route('profile') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span class="text-sm">Profil Saya</span>
+                            </a>
+                            <a href="{{ route('my-tickets') }}" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors">
+                                <i data-lucide="ticket" class="w-4 h-4"></i>
+                                <span class="text-sm">Tiket Saya</span>
+                            </a>
+                            <div class="border-t border-white/10"></div>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors w-full text-left">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                                    <span class="text-sm">Keluar</span>
+                                </button>
+                            </form>
                         </div>
-                        <form action="{{ route('logout') }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 bg-white/5 hover:bg-[#ff2d55]/10 text-gray-300 hover:text-[#ff2d55] rounded-xl transition-all" title="Logout">
-                                <i data-lucide="log-out" class="w-5 h-5"></i>
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>
@@ -96,7 +159,7 @@
             <a href="{{ url()->previous() }}" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
-            <h1 class="text-3xl font-bold">My Profile</h1>
+            <h1 class="text-3xl font-bold">Profil Saya</h1>
         </div>
 
         @if(session('success'))
@@ -159,13 +222,6 @@
                             @error('phone_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Bio / Deskripsi Singkat</label>
-                            <textarea name="bio" rows="3" 
-                                      class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors"
-                                      placeholder="Ceritakan tentang dirimu...">{{ old('bio', auth()->user()->bio) }}</textarea>
-                        </div>
-
                         <div class="border-t border-white/10 pt-4">
                             <h3 class="font-semibold mb-3">Ganti Password</h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -198,6 +254,162 @@
 
     <script>
         lucide.createIcons();
+        
+        // ========================================
+        // DROPDOWN PROFIL
+        // ========================================
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userDropdown = document.getElementById('userDropdown');
+        
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+        }
+        
+        document.addEventListener('click', function() {
+            if (userDropdown) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+        
+        // ========================================
+        // SISTEM NOTIFIKASI
+        // ========================================
+        let notificationBtn = document.getElementById('notificationBtn');
+        let notificationDropdown = document.getElementById('notificationDropdown');
+        let notificationList = document.getElementById('notificationList');
+        let notificationBadge = document.getElementById('notificationBadge');
+
+        function loadNotifications() {
+            fetch('{{ route("notifications.get") }}')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationBadge(data.unread_count);
+                    renderNotifications(data.notifications);
+                })
+                .catch(error => console.error('Error memuat notifikasi:', error));
+        }
+
+        function updateNotificationBadge(count) {
+            if (count > 0) {
+                notificationBadge.textContent = count > 9 ? '9+' : count;
+                notificationBadge.classList.remove('hidden');
+            } else {
+                notificationBadge.classList.add('hidden');
+            }
+        }
+
+        function renderNotifications(notifications) {
+            if (!notifications || notifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div class="p-6 text-center text-gray-500">
+                        <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2"></i>
+                        <p class="text-sm">Tidak ada notifikasi</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+            
+            let html = '';
+            notifications.forEach(notif => {
+                const iconColor = notif.type === 'success' ? 'text-green-400' : 
+                                 (notif.type === 'warning' ? 'text-yellow-400' : 'text-blue-400');
+                const iconName = notif.type === 'success' ? 'check-circle' : 
+                                (notif.type === 'warning' ? 'alert-triangle' : 'bell');
+                
+                html += `
+                    <div class="notification-item p-3 hover:bg-white/5 transition-colors border-b border-white/5 cursor-pointer ${!notif.is_read ? 'bg-[#ff2d55]/5' : ''}" 
+                         data-id="${notif.id}" 
+                         data-link="${notif.link || '#'}">
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold">${escapeHtml(notif.title)}</p>
+                                <p class="text-xs text-gray-400 mt-1">${escapeHtml(notif.message)}</p>
+                                <p class="text-xs text-gray-500 mt-1">${notif.time_ago}</p>
+                            </div>
+                            <button class="delete-notif text-gray-500 hover:text-red-400 transition" data-id="${notif.id}">
+                                <i data-lucide="x" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            notificationList.innerHTML = html;
+            lucide.createIcons();
+            
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    if (e.target.closest('.delete-notif')) return;
+                    const id = this.dataset.id;
+                    const link = this.dataset.link;
+                    
+                    fetch(`/notifications/${id}/read`, { 
+                        method: 'POST', 
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+                    }).then(() => {
+                        if (link && link !== '#') {
+                            window.location.href = link;
+                        } else {
+                            loadNotifications();
+                        }
+                    });
+                });
+            });
+            
+            document.querySelectorAll('.delete-notif').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const id = this.dataset.id;
+                    if (confirm('Hapus notifikasi ini?')) {
+                        fetch(`/notifications/${id}`, { 
+                            method: 'DELETE', 
+                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+                        }).then(() => loadNotifications());
+                    }
+                });
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('hidden');
+                if (!notificationDropdown.classList.contains('hidden')) {
+                    loadNotifications();
+                }
+            });
+        }
+
+        document.getElementById('markAllReadBtn')?.addEventListener('click', function() {
+            fetch('{{ route("notifications.readAll") }}', { 
+                method: 'POST', 
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } 
+            }).then(() => loadNotifications());
+        });
+
+        document.addEventListener('click', function() {
+            if (notificationDropdown) {
+                notificationDropdown.classList.add('hidden');
+            }
+        });
+
+        setTimeout(() => {
+            loadNotifications();
+        }, 1000);
         
         // Preview avatar
         document.getElementById('avatar')?.addEventListener('change', function(e) {

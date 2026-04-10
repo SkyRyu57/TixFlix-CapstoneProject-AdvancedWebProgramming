@@ -9,14 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            if (!Schema::hasColumn('payments', 'proof_image')) {
-                $table->string('proof_image')->nullable();
-            }
-            if (!Schema::hasColumn('payments', 'notes')) {
-                $table->text('notes')->nullable();
-            }
             if (!Schema::hasColumn('payments', 'verified_at')) {
                 $table->timestamp('verified_at')->nullable();
+            }
+            if (!Schema::hasColumn('payments', 'rejected_reason')) {
+                $table->text('rejected_reason')->nullable();
             }
         });
     }
@@ -24,7 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            $table->dropColumn(['proof_image', 'notes', 'verified_at']);
+            $table->dropColumn(['verified_at', 'rejected_reason']);
         });
     }
 };

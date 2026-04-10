@@ -86,6 +86,29 @@
             width: 90%;
             text-align: center;
         }
+        
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100">
@@ -228,13 +251,13 @@
                             <div id="uploadArea" class="upload-area">
                                 <i data-lucide="upload-cloud" class="w-12 h-12 text-gray-400 mx-auto mb-3"></i>
                                 <p class="text-gray-400">Klik atau drag & drop file di sini</p>
-                                <p class="text-gray-500 text-xs mt-1">Format: JPG, PNG, PDF (Max 2MB)</p>
-                                <input type="file" id="proofImage" name="proof_image" accept="image/*,application/pdf" class="hidden" required>
+                                <p class="text-gray-500 text-xs mt-1">Format: JPG, PNG (Max 2MB)</p>
+                                <input type="file" id="proofImage" name="proof_image" accept="image/jpeg,image/png,image/jpg" class="hidden" required>
                             </div>
                             
                             <div id="imagePreview" class="mt-4 text-center hidden">
                                 <img id="previewImg" class="preview-image" alt="Preview">
-                                <button type="button" onclick="removeImage()" class="text-xs text-red-400 mt-2">Hapus</button>
+                                <button type="button" onclick="removeImage()" class="text-xs text-red-400 mt-2 hover:text-red-300 transition-colors">Hapus</button>
                             </div>
                             
                             <div class="mt-4">
@@ -318,10 +341,22 @@
             document.getElementById('expiredModal').style.display = 'flex';
         }
 
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         // Copy to clipboard
-        function copyToClipboard(text) {
+        window.copyToClipboard = function(text) {
             navigator.clipboard.writeText(text);
-            alert('Nomor rekening telah disalin!');
+            showToast('Nomor rekening telah disalin!', 'success');
         }
 
         // Upload area
@@ -347,15 +382,23 @@
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
+            if (file && (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg')) {
                 fileInput.files = e.dataTransfer.files;
                 previewFile(file);
+            } else {
+                showToast('File harus berupa gambar (JPG/PNG)', 'error');
             }
         });
         
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
-                previewFile(e.target.files[0]);
+                const file = e.target.files[0];
+                if (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/jpg') {
+                    previewFile(file);
+                } else {
+                    showToast('File harus berupa gambar (JPG/PNG)', 'error');
+                    fileInput.value = '';
+                }
             }
         });
         
@@ -369,7 +412,7 @@
             reader.readAsDataURL(file);
         }
         
-        function removeImage() {
+        window.removeImage = function() {
             fileInput.value = '';
             imagePreview.classList.add('hidden');
             uploadArea.style.display = 'block';
@@ -383,12 +426,12 @@
             e.preventDefault();
             
             if (!fileInput.files[0]) {
-                alert('Silakan upload bukti pembayaran terlebih dahulu!');
+                showToast('Silakan upload bukti pembayaran terlebih dahulu!', 'error');
                 return;
             }
             
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split mr-2 animate-spin"></i>Mengirim...';
+            submitBtn.innerHTML = '<div class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>Mengirim...';
             
             const formData = new FormData(paymentForm);
             
@@ -407,14 +450,14 @@
                     clearInterval(timerInterval);
                     document.getElementById('successModal').style.display = 'flex';
                 } else {
-                    alert(result.message || 'Gagal mengirim bukti pembayaran. Silakan coba lagi.');
+                    showToast(result.message || 'Gagal mengirim bukti pembayaran. Silakan coba lagi.', 'error');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 inline mr-2"></i>Konfirmasi Pembayaran';
                     lucide.createIcons();
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Terjadi kesalahan. Silakan coba lagi.');
+                showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 inline mr-2"></i>Konfirmasi Pembayaran';
                 lucide.createIcons();

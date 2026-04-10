@@ -163,18 +163,15 @@
                     <span class="text-xl md:text-2xl font-bold tracking-tight">Tix<span class="text-gradient">flix</span></span>
                 </div>
 
+                <!-- NAVBAR MENU -->
                 <div class="hidden md:flex space-x-8 items-center">
                     <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
                         Beranda
                         @if(request()->routeIs('dashboard')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
-                    <a href="{{ route('concerts') }}" class="{{ request()->routeIs('concerts') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        Konser
-                        @if(request()->routeIs('concerts')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
-                    </a>
-                    <a href="{{ route('festivals') }}" class="{{ request()->routeIs('festivals') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
-                        Festival
-                        @if(request()->routeIs('festivals')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
+                    <a href="{{ route('events.list') }}" class="{{ request()->routeIs('events.list') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
+                        Event
+                        @if(request()->routeIs('events.list')) <span class="absolute -bottom-1.5 left-0 w-full h-0.5 bg-[#ff2d55] rounded-full"></span> @endif
                     </a>
                     <a href="{{ route('my-tickets') }}" class="{{ request()->routeIs('my-tickets') ? 'text-white font-medium relative group' : 'text-gray-400 hover:text-white font-medium transition-colors' }}">
                         Tiket Saya
@@ -259,10 +256,6 @@
             
             <div class="relative z-20 flex flex-col md:flex-row items-center justify-between min-h-[350px] lg:min-h-[480px] p-8 md:p-10">
                 <div class="w-full md:w-1/2 space-y-5 z-20">
-                    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-panel border border-[#6a5af9]/40 text-xs font-semibold text-gray-200 mb-1">
-                        <i data-lucide="star" class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"></i>
-                        Platform Tiket Event #1
-                    </div>
                     <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
                         Temukan Event <br/>
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#8e7aff] to-[#5946ea] drop-shadow-md">Terbaik Untukmu</span>
@@ -271,7 +264,7 @@
                         Jelajahi ribuan konser, festival, dan pameran menarik. Dapatkan tiketmu sekarang dan ciptakan momen tak terlupakan!
                     </p>
                     <div class="pt-4 flex flex-wrap gap-3">
-                        <button class="bg-[#5946ea] hover:bg-[#6a5af9] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(89,70,234,0.4)] transform hover:-translate-y-1 transition-all duration-300">
+                        <button onclick="window.location.href='{{ route('events.list') }}'" class="bg-[#5946ea] hover:bg-[#6a5af9] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(89,70,234,0.4)] transform hover:-translate-y-1 transition-all duration-300">
                             Jelajahi Event
                         </button>
                         <button class="glass-panel text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-white/20">
@@ -291,250 +284,181 @@
             </div>
         </section>
 
-        <!-- Section Explore Kategori -->
+        <!-- Event Terbaru Section (4 event terbaru) -->
         <section>
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold flex items-center gap-2">
-                    <i data-lucide="compass" class="w-6 h-6 text-[#ff2d55]"></i>
-                    Jelajahi Kategori
+                    <i data-lucide="calendar" class="w-6 h-6 text-[#ff2d55]"></i>
+                    Event Terbaru
                 </h2>
-                <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Semua Kategori</a>
+                <a href="{{ route('events.list') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                @foreach($categories as $category)
-                    @php
-                        $categoryName = strtolower($category->name);
-                        $routeName = '';
-                        
-                        if (Str::contains($categoryName, 'konser') || Str::contains($categoryName, 'music') || Str::contains($categoryName, 'musik')) {
-                            $routeName = route('concerts');
-                        } elseif (Str::contains($categoryName, 'festival')) {
-                            $routeName = route('festivals');
-                        } elseif (Str::contains($categoryName, 'teknologi')) {
-                            $routeName = url('/category/' . $category->id . '?type=technology');
-                        } elseif (Str::contains($categoryName, 'kuliner')) {
-                            $routeName = url('/category/' . $category->id . '?type=culinary');
-                        } elseif (Str::contains($categoryName, 'workshop')) {
-                            $routeName = url('/category/' . $category->id . '?type=workshop');
-                        } else {
-                            $routeName = url('/category/' . $category->id);
-                        }
-                    @endphp
-                    
-                    <a href="{{ $routeName }}" 
-                       class="glass-card hover:bg-white/5 p-6 rounded-2xl cursor-pointer group transition-all duration-300 hover:-translate-y-1 text-center flex flex-col items-center gap-3">
-                        <div class="w-14 h-14 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
-                            @if(Str::contains($categoryName, 'konser') || Str::contains($categoryName, 'music') || Str::contains($categoryName, 'musik'))
-                                <i data-lucide="mic-2" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'festival'))
-                                <i data-lucide="tent" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'olahraga') || Str::contains($categoryName, 'sport') || Str::contains($categoryName, 'sports'))
-                                <i data-lucide="trophy" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'pameran') || Str::contains($categoryName, 'exhibition') || Str::contains($categoryName, 'seni'))
-                                <i data-lucide="palette" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'teknologi') || Str::contains($categoryName, 'technology'))
-                                <i data-lucide="cpu" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'kuliner') || Str::contains($categoryName, 'culinary'))
-                                <i data-lucide="utensils" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'workshop'))
-                                <i data-lucide="graduation-cap" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'teater'))
-                                <i data-lucide="theater" class="w-7 h-7"></i>
-                            @elseif(Str::contains($categoryName, 'seminar'))
-                                <i data-lucide="users" class="w-7 h-7"></i>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                @forelse($pilihanEvents as $event)
+                    <a href="{{ url('/events/' . $event->id) }}" 
+                       class="glass-card rounded-2xl overflow-hidden group cursor-pointer relative block transform hover:-translate-y-1 transition-all duration-300">
+
+                        <div class="aspect-video relative overflow-hidden bg-[#1e1e28]">
+                            @if($event->banner)
+                                <img 
+                                    src="{{ Str::startsWith($event->banner, 'http') ? $event->banner : asset('storage/' . $event->banner) }}" 
+                                    alt="{{ $event->title }}" 
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                >
                             @else
-                                <i data-lucide="ticket" class="w-7 h-7"></i>
+                                <div class="w-full h-full bg-gradient-to-br from-[#6a5af9]/40 to-[#0b0b0f] flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                                    <i data-lucide="calendar" class="w-12 h-12 text-white/20"></i>
+                                </div>
                             @endif
+
+                            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0b0b0f] to-transparent z-10 pointer-events-none"></div>
                         </div>
-                        <span class="font-medium">{{ $category->name }}</span>
+
+                        <div class="p-4 relative z-20 -mt-6">
+                            <span class="text-xs font-bold tracking-wider text-[#6a5af9] uppercase mb-1 block">
+                                {{ $event->category->name ?? 'Event' }}
+                            </span>
+
+                            <h3 class="font-bold text-lg mb-2 group-hover:text-[#6a5af9] transition-colors line-clamp-2">
+                                {{ $event->title }}
+                            </h3>
+
+                            <div class="space-y-2 text-sm text-gray-400 mb-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                                    {{ \Carbon\Carbon::parse($event->start_date)->format('d M Y') }}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    {{ Str::limit($event->location, 20) }}
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <span class="text-lg font-bold text-white">
+                                    @if($event->tickets && $event->tickets->count() > 0)
+                                        Rp {{ number_format($event->tickets->min('price'), 0, ',', '.') }}
+                                    @else
+                                        Habis Terjual
+                                    @endif
+                                </span>
+
+                                <div class="bg-white/10 group-hover:bg-[#6a5af9] text-white p-2 rounded-xl transition-colors duration-300">
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
                     </a>
-                @endforeach
+                @empty
+                    <div class="col-span-4 text-center py-10 text-gray-500 glass-card rounded-2xl">
+                        Belum ada event yang tersedia saat ini.
+                    </div>
+                @endforelse
             </div>
         </section>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Event Selanjutnya Section -->
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i data-lucide="ticket" class="w-6 h-6 text-white"></i> Event Selanjutnya
+                </h2>
+                <a href="{{ route('my-tickets') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
+            </div>
             
-            <!-- Section Trending -->
-            <section class="lg:col-span-2">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="flame" class="w-6 h-6 text-[#ff5e3a]"></i>
-                        Sedang Trending
-                    </h2>
-                    <a href="#" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
-                </div>
+            @php
+                $upcomingTickets = App\Models\Eticket::with(['ticket.event'])
+                    ->where('user_id', auth()->id())
+                    ->whereHas('ticket.event', function($query) {
+                        $query->where('start_date', '>=', now());
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->take(1)
+                    ->get();
+            @endphp
+            
+            @forelse($upcomingTickets as $eticket)
+                @php
+                    $event = $eticket->ticket->event;
+                    $isTomorrow = \Carbon\Carbon::parse($event->start_date)->isTomorrow();
+                    $dateLabel = $isTomorrow ? 'BESOK' : \Carbon\Carbon::parse($event->start_date)->format('D, M d');
+                @endphp
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    @forelse($pilihanEvents as $event)
-                        <a href="{{ url('/events/' . $event->id) }}" 
-                           class="glass-card rounded-2xl overflow-hidden group cursor-pointer relative block transform hover:-translate-y-1 transition-all duration-300">
-
-                            <div class="absolute top-3 right-3 z-20 glass-panel px-3 py-1.5 rounded-full text-xs font-bold text-white flex items-center gap-1 pointer-events-none">
-                                <i data-lucide="star" class="w-3 h-3 text-yellow-400 fill-yellow-400"></i> 4.8
-                            </div>
-
-                            <div class="aspect-video relative overflow-hidden bg-[#1e1e28]">
+                <div class="glass-card rounded-3xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff2d55]/10 rounded-full blur-[40px] -mr-10 -mt-10"></div>
+                    
+                    <div class="relative z-10 border-b border-white/10 pb-5 mb-5">
+                        <div class="flex gap-4">
+                            <div class="w-16 h-20 rounded-xl overflow-hidden shrink-0 bg-gray-800">
                                 @if($event->banner)
-                                    <img 
-                                        src="{{ Str::startsWith($event->banner, 'http') ? $event->banner : asset('storage/' . $event->banner) }}" 
-                                        alt="{{ $event->title }}" 
-                                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                    >
+                                    <img src="{{ Str::startsWith($event->banner, 'http') ? $event->banner : asset('storage/' . $event->banner) }}" 
+                                         alt="{{ $event->title }}" 
+                                         class="w-full h-full object-cover">
                                 @else
-                                    <div class="w-full h-full bg-gradient-to-br from-[#6a5af9]/40 to-[#0b0b0f] flex items-center justify-center group-hover:scale-110 transition-transform duration-700">
-                                        <i data-lucide="mic" class="w-12 h-12 text-white/20"></i>
+                                    <div class="w-full h-full bg-gradient-to-br from-orange-500/40 to-[#0b0b0f] flex items-center justify-center">
+                                        <i data-lucide="ticket" class="w-6 h-6 text-white/30"></i>
                                     </div>
                                 @endif
-
-                                <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#0b0b0f] to-transparent z-10 pointer-events-none"></div>
-                            </div>
-
-                            <div class="p-5 relative z-20 -mt-6">
-                                <span class="text-xs font-bold tracking-wider text-[#6a5af9] uppercase mb-1 block">
-                                    {{ $event->category->name ?? 'Event' }}
-                                </span>
-
-                                <h3 class="text-xl font-bold mb-2 group-hover:text-[#6a5af9] transition-colors truncate">
-                                    {{ $event->title }}
-                                </h3>
-
-                                <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
-                                    <span class="flex items-center gap-1.5">
-                                        <i data-lucide="calendar" class="w-4 h-4"></i> 
-                                        {{ \Carbon\Carbon::parse($event->start_date)->format('M d') }}
-                                    </span>
-
-                                    <span class="flex items-center gap-1.5 truncate" title="{{ $event->location }}">
-                                        <i data-lucide="map-pin" class="w-4 h-4"></i> 
-                                        {{ Str::limit($event->location, 15) }}
-                                    </span>
-                                </div>
-
-                                <div class="flex items-center justify-between">
-                                    <span class="text-lg font-bold text-white">
-                                        @if($event->tickets && $event->tickets->count() > 0)
-                                            Rp {{ number_format($event->tickets->min('price'), 0, ',', '.') }}
-                                        @else
-                                            Habis Terjual
-                                        @endif
-                                    </span>
-
-                                    <div class="bg-white/10 group-hover:bg-[#6a5af9] text-white p-2.5 rounded-xl transition-colors duration-300">
-                                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="col-span-2 text-center py-10 text-gray-500 glass-card rounded-2xl">
-                            Belum ada event yang tersedia saat ini.
-                        </div>
-                    @endforelse
-                </div>
-            </section>
-
-            <!-- Section Event Selanjutnya -->
-            <section class="lg:col-span-1">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="ticket" class="w-6 h-6 text-white"></i> Event Selanjutnya
-                    </h2>
-                    <a href="{{ route('my-tickets') }}" class="text-sm text-[#ff2d55] hover:text-white transition-colors font-medium">Lihat Semua</a>
-                </div>
-                
-                @php
-                    $upcomingTickets = App\Models\Eticket::with(['ticket.event'])
-                        ->where('user_id', auth()->id())
-                        ->whereHas('ticket.event', function($query) {
-                            $query->where('start_date', '>=', now());
-                        })
-                        ->orderBy('created_at', 'desc')
-                        ->take(1)
-                        ->get();
-                @endphp
-                
-                @forelse($upcomingTickets as $eticket)
-                    @php
-                        $event = $eticket->ticket->event;
-                        $isTomorrow = \Carbon\Carbon::parse($event->start_date)->isTomorrow();
-                        $dateLabel = $isTomorrow ? 'BESOK' : \Carbon\Carbon::parse($event->start_date)->format('D, M d');
-                    @endphp
-                    
-                    <div class="glass-card rounded-3xl p-6 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff2d55]/10 rounded-full blur-[40px] -mr-10 -mt-10"></div>
-                        
-                        <div class="relative z-10 border-b border-white/10 pb-5 mb-5">
-                            <div class="flex gap-4">
-                                <div class="w-16 h-20 rounded-xl overflow-hidden shrink-0 bg-gray-800">
-                                    @if($event->banner)
-                                        <img src="{{ Str::startsWith($event->banner, 'http') ? $event->banner : asset('storage/' . $event->banner) }}" 
-                                             alt="{{ $event->title }}" 
-                                             class="w-full h-full object-cover">
-                                    @else
-                                        <div class="w-full h-full bg-gradient-to-br from-orange-500/40 to-[#0b0b0f] flex items-center justify-center">
-                                            <i data-lucide="ticket" class="w-6 h-6 text-white/30"></i>
-                                        </div>
-                                    @endif
-                                </div>
-                                
-                                <div class="flex-1">
-                                    <span class="text-[10px] sm:text-xs font-bold text-[#ff2d55] bg-[#ff2d55]/10 px-2 py-1 rounded-md mb-1.5 inline-block">
-                                        {{ $dateLabel }}
-                                    </span>
-                                    <h4 class="font-bold text-white leading-tight mb-1 text-sm sm:text-base">{{ $event->title }}</h4>
-                                    <p class="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1.5 mb-2">
-                                        <i data-lucide="clock" class="w-3 h-3"></i> 
-                                        {{ \Carbon\Carbon::parse($event->start_date)->format('H:i') }} WIB
-                                    </p>
-                                    <p class="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1.5">
-                                        <i data-lucide="map-pin" class="w-3 h-3"></i> 
-                                        {{ $event->location }}
-                                    </p>
-                                </div>
                             </div>
                             
-                            <div class="mt-4 pt-4 border-t border-dashed border-white/20 flex justify-between items-center">
-                                <div class="text-xs sm:text-sm font-bold font-mono tracking-widest text-[#ff2d55]">
-                                    {{ $eticket->ticket_code }}
-                                </div>
-                                <button onclick="showQR('{{ $eticket->ticket_code }}', '{{ $event->title }}')" 
-                                        class="text-[10px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors">
-                                    Tampilkan QR
-                                </button>
+                            <div class="flex-1">
+                                <span class="text-[10px] sm:text-xs font-bold text-[#ff2d55] bg-[#ff2d55]/10 px-2 py-1 rounded-md mb-1.5 inline-block">
+                                    {{ $dateLabel }}
+                                </span>
+                                <h4 class="font-bold text-white leading-tight mb-1 text-sm sm:text-base">{{ $event->title }}</h4>
+                                <p class="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1.5 mb-2">
+                                    <i data-lucide="clock" class="w-3 h-3"></i> 
+                                    {{ \Carbon\Carbon::parse($event->start_date)->format('H:i') }} WIB
+                                </p>
+                                <p class="text-[10px] sm:text-xs text-gray-400 flex items-center gap-1.5">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i> 
+                                    {{ $event->location }}
+                                </p>
                             </div>
                         </div>
                         
-                        <div class="absolute left-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
-                        <div class="absolute right-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
-                    </div>
-                @empty
-                    <div class="glass-card rounded-3xl p-8 text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
-                            <i data-lucide="ticket" class="w-8 h-8 text-gray-500"></i>
+                        <div class="mt-4 pt-4 border-t border-dashed border-white/20 flex justify-between items-center">
+                            <div class="text-xs sm:text-sm font-bold font-mono tracking-widest text-[#ff2d55]">
+                                {{ $eticket->ticket_code }}
+                            </div>
+                            <button onclick="showQR('{{ $eticket->ticket_code }}', '{{ $event->title }}')" 
+                                    class="text-[10px] sm:text-xs font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors">
+                                Tampilkan QR
+                            </button>
                         </div>
-                        <p class="text-gray-400 text-sm mb-2">Belum ada tiket yang akan datang</p>
-                        <a href="{{ route('dashboard') }}" class="text-[#ff2d55] text-sm hover:text-white transition-colors">
-                            Cari event sekarang →
-                        </a>
                     </div>
-                @endforelse
+                    
+                    <div class="absolute left-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
+                    <div class="absolute right-[-10px] top-[140px] w-5 h-5 bg-[#0b0b0f] rounded-full shadow-[inset_0_0_8px_rgba(0,0,0,0.5)]"></div>
+                </div>
+            @empty
+                <div class="glass-card rounded-3xl p-8 text-center">
+                    <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-white/5 flex items-center justify-center">
+                        <i data-lucide="ticket" class="w-8 h-8 text-gray-500"></i>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-2">Belum ada tiket yang akan datang</p>
+                    <a href="{{ route('events.list') }}" class="text-[#ff2d55] text-sm hover:text-white transition-colors">
+                        Cari event sekarang →
+                    </a>
+                </div>
+            @endforelse
 
-                @php
-                    $totalUpcoming = App\Models\Eticket::where('user_id', auth()->id())
-                        ->whereHas('ticket.event', function($query) {
-                            $query->where('start_date', '>=', now());
-                        })
-                        ->count();
-                @endphp
-                
-                @if($totalUpcoming > 1)
-                    <div class="mt-4 p-4 rounded-xl border border-dashed border-white/20 text-center text-sm text-gray-400 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                         onclick="window.location.href='{{ route('my-tickets') }}'">
-                        + Anda memiliki {{ $totalUpcoming - 1 }} event mendatang lagi
-                    </div>
-                @endif
-            </section>
-        </div>
+            @php
+                $totalUpcoming = App\Models\Eticket::where('user_id', auth()->id())
+                    ->whereHas('ticket.event', function($query) {
+                        $query->where('start_date', '>=', now());
+                    })
+                    ->count();
+            @endphp
+            
+            @if($totalUpcoming > 1)
+                <div class="mt-4 p-4 rounded-xl border border-dashed border-white/20 text-center text-sm text-gray-400 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                     onclick="window.location.href='{{ route('my-tickets') }}'">
+                    + Anda memiliki {{ $totalUpcoming - 1 }} event mendatang lagi
+                </div>
+            @endif
+        </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
@@ -700,7 +624,7 @@
         }, 1000);
 
         // ========================================
-        // FUNGSI MODAL QR CODE
+        // FUNGSI MODAL QR CODE (DIPERBAIKI)
         // ========================================
         let currentQRCode = null;
         
@@ -709,9 +633,17 @@
             const qrContainer = document.getElementById('qrCode');
             const ticketCodeEl = document.getElementById('qrTicketCode');
             
+            if (!modal || !qrContainer) {
+                console.error('Modal QR tidak ditemukan');
+                return;
+            }
+            
             ticketCodeEl.textContent = ticketCode;
             
+            // Bersihkan container
             qrContainer.innerHTML = '';
+            
+            // Generate QR Code
             QRCode.toCanvas(qrContainer, ticketCode, {
                 width: 200,
                 margin: 2,
@@ -731,10 +663,13 @@
         }
         
         function closeQRModal(event) {
-            if (event && event.target === document.getElementById('qrModal')) {
-                document.getElementById('qrModal').style.display = 'none';
+            const modal = document.getElementById('qrModal');
+            if (!modal) return;
+            
+            if (event && event.target === modal) {
+                modal.style.display = 'none';
             } else if (!event) {
-                document.getElementById('qrModal').style.display = 'none';
+                modal.style.display = 'none';
             }
         }
         

@@ -74,7 +74,7 @@
                     
                     <div>
                         <label class="block text-sm font-medium mb-2">Stock *</label>
-                        <input type="number" name="stock" id="ticketStock" required min="1"
+                        <input type="number" name="stock" id="ticketStock" required min="0"
                                class="w-full px-4 py-3 bg-[#0b0b0f] border border-white/10 rounded-xl focus:border-[#ff2d55] transition-colors"
                                placeholder="1">
                     </div>
