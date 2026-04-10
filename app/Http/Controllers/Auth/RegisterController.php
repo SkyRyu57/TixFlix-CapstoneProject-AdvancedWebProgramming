@@ -13,16 +13,21 @@ class RegisterController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. VALIDASI DATA
+        // 1. VALIDASI DATA dengan unique untuk email dan phone_number
         $request->validate([
             'name'         => 'required|string|max:255',
-            'email'        => 'required|string|email|max:255|unique:users',
-            'phone_number' => 'nullable|numeric|digits_between:10,15',
+            'email'        => 'required|string|email|max:255|unique:users,email',
+            'phone_number' => 'nullable|string|max:20|unique:users,phone_number',
             'password'     => 'required|string|min:6|confirmed',
             'role'         => 'required|in:admin,organizer,customer',
+        ], [
+            'email.unique' => 'Email sudah terdaftar! Silakan gunakan email lain.',
+            'phone_number.unique' => 'Nomor telepon sudah terdaftar! Silakan gunakan nomor lain.',
+            'password.min' => 'Password minimal 6 karakter.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        // 2. SIMPAN DATA KE DATABASE (HAPUS COUNTRY)
+        // 2. SIMPAN DATA KE DATABASE
         $user = User::create([
             'name'         => $request->name,
             'email'        => $request->email,

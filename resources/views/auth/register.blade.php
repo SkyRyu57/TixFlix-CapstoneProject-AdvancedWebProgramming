@@ -24,7 +24,7 @@
 
         @if ($errors->any())
             <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg">
-                <p class="font-bold text-sm">Ada kesalahan:</p>
+                <p class="font-bold text-sm">Gagal mendaftar:</p>
                 <ul class="list-disc list-inside text-sm mt-1">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -33,40 +33,70 @@
             </div>
         @endif
 
+        @if (session('error'))
+            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <form action="{{ route('register.store') }}" method="POST">
             @csrf 
             <div class="mb-4">
-                <label class="block text-slate-400 text-sm font-medium mb-2">Nama Lengkap</label>
-                <input type="text" name="name" value="{{ old('name') }}" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="Contoh: Ricko IT" required>
+                <label class="block text-slate-400 text-sm font-medium mb-2">Nama Lengkap *</label>
+                <input type="text" name="name" value="{{ old('name') }}" 
+                       class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors @error('name') border-red-500 @enderror" 
+                       placeholder="Contoh: Ricko IT" required>
+                @error('name')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-4">
-                <label class="block text-slate-400 text-sm font-medium mb-2">Email</label>
-                <input type="email" name="email" value="{{ old('email') }}" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="email@contoh.com" required>
+                <label class="block text-slate-400 text-sm font-medium mb-2">Email *</label>
+                <input type="email" name="email" value="{{ old('email') }}" 
+                       class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors @error('email') border-red-500 @enderror" 
+                       placeholder="email@contoh.com" required>
+                @error('email')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-4">
                 <label class="block text-slate-400 text-sm font-medium mb-2">No. Telepon</label>
-                <input type="text" name="phone_number" value="{{ old('phone_number') }}" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="08123xxx">
+                <input type="text" name="phone_number" value="{{ old('phone_number') }}" 
+                       class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors @error('phone_number') border-red-500 @enderror" 
+                       placeholder="08123xxx">
+                @error('phone_number')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-4">
-                <label class="block text-slate-400 text-sm font-medium mb-2">Daftar Sebagai (Role)</label>
+                <label class="block text-slate-400 text-sm font-medium mb-2">Daftar Sebagai (Role) *</label>
                 <select name="role" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors appearance-none">
-                    <option value="customer" class="bg-slate-900">Customer (Penonton)</option>
-                    <option value="organizer" class="bg-slate-900">Organizer (Penyelenggara)</option>
-                    <option value="admin" class="bg-slate-900">Admin</option>
+                    <option value="customer" class="bg-slate-900" {{ old('role') == 'customer' ? 'selected' : '' }}>Customer (Penonton)</option>
+                    <option value="organizer" class="bg-slate-900" {{ old('role') == 'organizer' ? 'selected' : '' }}>Organizer (Penyelenggara)</option>
                 </select>
+                @error('role')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-4">
-                <label class="block text-slate-400 text-sm font-medium mb-2">Password</label>
-                <input type="password" name="password" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" required>
+                <label class="block text-slate-400 text-sm font-medium mb-2">Password *</label>
+                <input type="password" name="password" 
+                       class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors @error('password') border-red-500 @enderror" 
+                       required>
+                @error('password')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-6">
-                <label class="block text-slate-400 text-sm font-medium mb-2">Konfirmasi Password</label>
-                <input type="password" name="password_confirmation" class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" required>
+                <label class="block text-slate-400 text-sm font-medium mb-2">Konfirmasi Password *</label>
+                <input type="password" name="password_confirmation" 
+                       class="w-full px-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" 
+                       required>
             </div>
 
             <button type="submit" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition duration-300">

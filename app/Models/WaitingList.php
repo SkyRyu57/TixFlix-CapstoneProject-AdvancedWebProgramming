@@ -6,12 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WaitingList extends Model
 {
-    protected $fillable = ['user_id', 'ticket_id', 'quantity', 'status', 'notified_at'];
-    
-    protected $casts = [
-        'notified_at' => 'datetime',
-        'quantity' => 'integer',
-    ];
+    protected $fillable = ['user_id', 'ticket_id', 'quantity', 'status'];
     
     public function user()
     {
