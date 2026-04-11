@@ -36,6 +36,12 @@
             </div>
         @endif
 
+        @if(session('info'))
+            <div class="bg-blue-500/10 border-l-4 border-blue-500 text-blue-400 p-4 mb-6 rounded-r-lg text-sm">
+                {{ session('info') }}
+            </div>
+        @endif
+
         <form action="/login" method="POST">
             @csrf
 
@@ -49,7 +55,7 @@
                 </div>
             </div>
 
-            <div class="mb-8">
+            <div class="mb-5">
                 <label class="block text-slate-400 text-sm font-medium mb-2">Password</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
@@ -60,6 +66,11 @@
                         <i class="bi bi-eye" id="loginEye"></i>
                     </button>
                 </div>
+            </div>
+
+            <!-- Forgot Password Link -->
+            <div class="text-right mb-6">
+                <a href="/forgot-password" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">Lupa password?</a>
             </div>
 
             <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition duration-300 flex justify-center items-center gap-2">
