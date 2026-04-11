@@ -1,0 +1,42 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+}
+.sidebar {
+    background-color: #111827;
+}
+.navbar-nav .nav-link {
+    color: #cbd5e1;
+}
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+    color: #60a5fa;
+}
+.card {
+    border-radius: 1rem;
+}
+.table-dark {
+    --bs-table-bg: #1e293b;
+}
+.progress {
+    background-color: #334155;
+}
+.sidebar-toggler {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+}
+.avatar-dropdown img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #f97316;
+    cursor: pointer;
+}
+.card-img-top {
+    border-top-left-radius: 1.25rem;
+    border-top-right-radius: 1.25rem;
+}

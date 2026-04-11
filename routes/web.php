@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Organizer\DashboardController;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
@@ -138,10 +139,8 @@ Route::middleware('guest')->group(function () {
 // ============================================
 Route::middleware('auth')->group(function () {
     
+    // Redirect berdasarkan role (tetap pakai route dashboard dinamis)
     Route::get('/home', function () {
-        $role = auth()->user()->role;
-        if ($role == 'admin') return redirect()->route('admin.dashboard');
-        if ($role == 'organizer') return redirect()->route('organizer.dashboard');
         return redirect()->route('dashboard');
     })->name('home');
 
@@ -154,10 +153,14 @@ Route::middleware('auth')->group(function () {
     // PROFILE MANAGEMENT
     // ========================================
     Route::get('/profile', function () {
-        if (auth()->user()->role == 'organizer') {
-            return view('dashboard-organizer.profile');
+        $user = auth()->user();
+        if ($user->role == 'admin') {
+            return view('admin.profile');
+        } elseif ($user->role == 'organizer') {
+            return view('organizer.profile');
+        } else {
+            return view('customer.profile');
         }
-        return view('dashboard-customer.profile');
     })->name('profile');
 
     Route::put('/profile', function (Request $request) {
@@ -172,12 +175,17 @@ Route::middleware('auth')->group(function () {
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        // Upload avatar
         if ($request->hasFile('avatar')) {
+            // Hapus avatar lama jika ada
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $avatarPath;
+            // Simpan file baru
+            $file = $request->file('avatar');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('avatars', $filename, 'public');
+            $user->avatar = $path;
         }
 
         $user->name = $request->name;
@@ -191,7 +199,7 @@ Route::middleware('auth')->group(function () {
         
         $user->save();
         
-        return back()->with('success', 'Profile berhasil diperbarui!');
+        return back()->with('success', 'Profil berhasil diperbarui!');
     })->name('profile.update');
 
     // ========================================
@@ -237,88 +245,31 @@ Route::middleware('auth')->group(function () {
     })->name('notifications.delete');
 
     // ========================================
-    // ADMIN DASHBOARD
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        
-        // Dashboard utama dengan data real
-        Route::get('/dashboard', [App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
-
-        Route::get('/events/pending', [App\Http\Controllers\Admin\EventController::class, 'pending'])->name('events.pending');
-        Route::post('/events/{event}/approve', [App\Http\Controllers\Admin\EventController::class, 'approve'])->name('events.approve');
-        Route::post('/events/{event}/reject', [App\Http\Controllers\Admin\EventController::class, 'reject'])->name('events.reject');
-        Route::get('/events', [App\Http\Controllers\Admin\EventController::class, 'index'])->name('events.index');
-        Route::get('/events/{event}', [App\Http\Controllers\Admin\EventController::class, 'show'])->name('events.show');
-        
-        Route::get('/transactions', [App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
-        Route::get('/transactions/{transaction}', [App\Http\Controllers\Admin\TransactionController::class, 'show'])->name('transactions.show');
-        Route::patch('/transactions/{transaction}/status', [App\Http\Controllers\Admin\TransactionController::class, 'updateStatus'])->name('transactions.update-status');
-        
-        Route::get('/waiting-lists', [App\Http\Controllers\Admin\WaitingListController::class, 'index'])->name('waiting-lists.index');
-        Route::get('/waiting-lists/event/{event}', [App\Http\Controllers\Admin\WaitingListController::class, 'byEvent'])->name('waiting-lists.by-event');
-        
-        // Waiting List Management (tambahan)
-        Route::post('/waiting-lists/{waiting}/invite', [App\Http\Controllers\Admin\WaitingListController::class, 'invite'])->name('waiting-lists.invite');
-        Route::post('/waiting-lists/event/{event}/invite-next', [App\Http\Controllers\Admin\WaitingListController::class, 'inviteNext'])->name('waiting-lists.invite-next');
-        // ==================================================
-        // ROUTE UNTUK VIEW SAMPLE (biar ga error karena dipanggil)
-        // ==================================================
-        Route::get('/charts', function () {
-            return view('dashboard-admin.chart');
-        })->name('charts');
-
-        Route::get('/forms', function () {
-            return view('dashboard-admin.form');
-        })->name('forms');
-
-        Route::get('/tables', function () {
-            return view('dashboard-admin.table');
-        })->name('tables');
-
-        Route::get('/widgets', function () {
-            return view('dashboard-admin.widget');
-        })->name('widgets');
-
-        Route::get('/elements', function () {
-            return view('dashboard-admin.element');
-        })->name('elements');
-
-        Route::get('/typography', function () {
-            return view('dashboard-admin.typography');
-        })->name('typography');
-
-        Route::get('/buttons', function () {
-            return view('dashboard-admin.button');
-        })->name('buttons');
-    });
-
+    // DASHBOARD DINAMIS (BERDASARKAN ROLE)
     // ========================================
-    // ORGANIZER DASHBOARD
-    // ========================================
-    Route::middleware('role:organizer')->group(function () {
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+        $role = $user->role;
         
-        Route::get('/organizer/dashboard', function () {
-            $events = \App\Models\Event::where('user_id', auth()->id())
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get();
-            
-            $totalEvents = \App\Models\Event::where('user_id', auth()->id())->count();
-            $totalTicketsSold = \App\Models\Eticket::whereHas('ticket.event', function($q) {
-                $q->where('user_id', auth()->id());
-            })->count();
-            
-            $totalRevenue = \App\Models\Eticket::whereHas('ticket.event', function($q) {
-                $q->where('user_id', auth()->id());
-            })->join('tickets', 'etickets.ticket_id', '=', 'tickets.id')
-              ->sum('tickets.price');
-            
-            $upcomingEvents = \App\Models\Event::where('user_id', auth()->id())
+        if ($role == 'admin') {
+            // Redirect ke route admin.dashboard (nanti akan dibuat)
+            return app()->make(\App\Http\Controllers\Admin\DashboardController::class)->index(request());
+        } elseif ($role == 'organizer') {
+            // Panggil controller organizer dashboard
+            return app()->make(\App\Http\Controllers\Organizer\DashboardController::class)->index(request());
+        } else { // customer
+            $categories = \App\Models\Category::all();
+            $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])
                 ->where('status', 'published')
                 ->where('start_date', '>=', now())
-                ->count();
+                ->orderBy('created_at', 'desc')
+                ->take(4)
+                ->get();
             
-            $allEvents = \App\Models\Event::with('category', 'tickets')
-                ->where('user_id', auth()->id())
+            $semuaEvents = \App\Models\Event::with(['category', 'tickets'])
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->orderBy('start_date', 'asc')
                 ->get();
             
             $eventFinancials = [];
@@ -362,7 +313,7 @@ Route::middleware('auth')->group(function () {
                     'ticket_details' => $ticketDetails,
                 ];
                 
-                $eventLabels[] = Str::limit($event->title, 15);
+                $eventLabels[] = \Illuminate\Support\Str::limit($event->title, 15);
                 $eventSalesData[] = $ticketsSold;
                 $eventRevenueData[] = $revenue;
             }
@@ -378,6 +329,7 @@ Route::middleware('auth')->group(function () {
                 ->where('user_id', auth()->id())
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
+            
             return view('dashboard-organizer.events', compact('events'));
         })->name('organizer.events');
         
@@ -386,7 +338,7 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-organizer.event-create', compact('categories'));
         })->name('organizer.event.create');
         
-        Route::post('/organizer/events', function (Request $request) {
+        Route::post('/organizer/events', function (\Illuminate\Http\Request $request) {
             $request->validate([
                 'title' => 'required|string|max:255',
                 'category_id' => 'required|exists:categories,id',
@@ -403,7 +355,7 @@ Route::middleware('auth')->group(function () {
                 $bannerPath = $request->file('banner')->store('events', 'public');
             }
 
-            $slug = Str::slug($request->title) . '-' . Str::random(6);
+            $slug = \Illuminate\Support\Str::slug($request->title) . '-' . \Illuminate\Support\Str::random(6);
 
             $event = \App\Models\Event::create([
                 'user_id' => auth()->id(),
@@ -428,7 +380,7 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-organizer.event-edit', compact('event', 'categories'));
         })->name('organizer.event.edit');
         
-        Route::put('/organizer/events/{id}', function (Request $request, $id) {
+        Route::put('/organizer/events/{id}', function (\Illuminate\Http\Request $request, $id) {
             $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
             
             $request->validate([
@@ -443,8 +395,8 @@ Route::middleware('auth')->group(function () {
             ]);
 
             if ($request->hasFile('banner')) {
-                if ($event->banner && Storage::disk('public')->exists($event->banner)) {
-                    Storage::disk('public')->delete($event->banner);
+                if ($event->banner && \Illuminate\Support\Facades\Storage::disk('public')->exists($event->banner)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($event->banner);
                 }
                 $event->banner = $request->file('banner')->store('events', 'public');
             }
@@ -484,10 +436,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/organizer/events/{id}/tickets', function ($id) {
             $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
             $tickets = \App\Models\Ticket::where('event_id', $id)->get();
+            
             return view('dashboard-organizer.tickets', compact('event', 'tickets'));
         })->name('organizer.event.tickets');
         
-        Route::post('/organizer/events/{id}/tickets', function (Request $request, $id) {
+        Route::post('/organizer/events/{id}/tickets', function (\Illuminate\Http\Request $request, $id) {
             $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($id);
             
             $request->validate([
@@ -508,7 +461,7 @@ Route::middleware('auth')->group(function () {
             return back()->with('success', 'Ticket added!');
         })->name('organizer.ticket.store');
         
-        Route::put('/organizer/events/{eventId}/tickets/{ticketId}', function (Request $request, $eventId, $ticketId) {
+        Route::put('/organizer/events/{eventId}/tickets/{ticketId}', function (\Illuminate\Http\Request $request, $eventId, $ticketId) {
             $event = \App\Models\Event::where('user_id', auth()->id())->findOrFail($eventId);
             $ticket = \App\Models\Ticket::where('event_id', $eventId)->findOrFail($ticketId);
             
@@ -538,7 +491,7 @@ Route::middleware('auth')->group(function () {
                     \App\Models\Notification::create([
                         'user_id' => $waiting->user_id,
                         'title' => 'Tiket Tersedia! 🎫',
-                        'message' => 'Tiket "' . $ticket->name . '" untuk event "' . $ticket->event->title . '" sudah tersedia!',
+                        'message' => 'Tiket "' . $ticket->name . '" untuk event "' . $ticket->event->title . '" sudah tersedia! Segera beli sebelum habis.',
                         'type' => 'success',
                         'link' => route('event.detail', $ticket->event->id),
                         'is_read' => false,
@@ -560,6 +513,7 @@ Route::middleware('auth')->group(function () {
             }
             
             $ticket->delete();
+            
             return back()->with('success', 'Ticket deleted!');
         })->name('organizer.ticket.delete');
         
@@ -574,8 +528,8 @@ Route::middleware('auth')->group(function () {
                 return back()->with('error', 'Cannot delete event that has tickets sold!');
             }
             
-            if ($event->banner && Storage::disk('public')->exists($event->banner)) {
-                Storage::disk('public')->delete($event->banner);
+            if ($event->banner && \Illuminate\Support\Facades\Storage::disk('public')->exists($event->banner)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($event->banner);
             }
             
             \App\Models\Ticket::where('event_id', $id)->delete();
@@ -591,6 +545,7 @@ Route::middleware('auth')->group(function () {
                 })
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
+            
             return view('dashboard-organizer.attendees', compact('attendees'));
         })->name('organizer.attendees');
         
@@ -656,7 +611,9 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-organizer.report-pdf', $data);
         })->name('organizer.report.export.pdf');
 
+        // ========================================
         // WAITING LIST MANAGEMENT (ORGANIZER)
+        // ========================================
         Route::get('/organizer/waitinglist', function () {
             $waitingLists = \App\Models\WaitingList::with(['user', 'ticket.event'])
                 ->whereHas('ticket.event', function($q) {
@@ -684,12 +641,15 @@ Route::middleware('auth')->group(function () {
             
             $notifiedCount = 0;
             foreach ($waitingUsers as $waiting) {
-                $waiting->update(['status' => 'notified', 'notified_at' => now()]);
+                $waiting->update([
+                    'status' => 'notified',
+                    'notified_at' => now(),
+                ]);
                 
                 \App\Models\Notification::create([
                     'user_id' => $waiting->user_id,
                     'title' => 'Tiket Tersedia! 🎫',
-                    'message' => 'Tiket "' . $ticket->name . '" untuk event "' . $ticket->event->title . '" sudah tersedia!',
+                    'message' => 'Tiket "' . $ticket->name . '" untuk event "' . $ticket->event->title . '" sudah tersedia! Segera beli sebelum habis.',
                     'type' => 'success',
                     'link' => route('event.detail', $ticket->event->id),
                     'is_read' => false,
@@ -704,13 +664,15 @@ Route::middleware('auth')->group(function () {
             $waiting = \App\Models\WaitingList::whereHas('ticket.event', function($q) {
                 $q->where('user_id', auth()->id());
             })->findOrFail($id);
+            
             $waiting->delete();
+            
             return back()->with('success', 'Berhasil dihapus dari waiting list.');
         })->name('organizer.waitinglist.delete');
     });
 
     // ========================================
-    // CUSTOMER DASHBOARD
+// CUSTOMER
     // ========================================
     Route::middleware('role:customer')->group(function () {
         

@@ -10,20 +10,13 @@ return new class extends Migration
     {
         Schema::create('etickets', function (Blueprint $table) {
             $table->id();
-            // Relasi ke transaksi induk
             $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
-            // Relasi ke jenis tiket yang dibeli (VIP/Reguler)
             $table->foreignId('ticket_id')->constrained()->onDelete('cascade');
-            // Relasi ke user pemilik tiket
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            
-            // Kode unik untuk isi QR Code
-            $table->string('ticket_code')->unique(); 
-            
-            // Status validasi (Fitur Scan Simulation)
+            $table->string('ticket_code')->unique();
             $table->boolean('is_scanned')->default(false);
             $table->timestamp('scanned_at')->nullable();
-            
+            $table->timestamp('issued_at')->nullable();
             $table->timestamps();
         });
     }

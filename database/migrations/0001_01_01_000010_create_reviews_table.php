@@ -8,19 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('tickets', function (Blueprint $table) {
+        Schema::create('reviews', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('event_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->integer('price')->default(0);
-            $table->integer('stock');
-            $table->text('description')->nullable();
+            $table->integer('rating');
+            $table->text('comment')->nullable();
             $table->timestamps();
+            $table->unique(['user_id', 'event_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('tickets');
+        Schema::dropIfExists('reviews');
     }
 };

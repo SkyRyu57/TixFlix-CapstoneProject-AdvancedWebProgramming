@@ -25,6 +25,13 @@ class Event extends Model
         'edited_by',   // Admin yang edit terakhir
         'approved_at'
     ];
+    protected $casts = [
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'approved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     protected static function boot()
     {
@@ -42,7 +49,7 @@ class Event extends Model
     }
 
     // Relasi ke Admin yang menyetujui
-    public function approver()
+    public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
@@ -64,6 +71,10 @@ class Event extends Model
     {
         return $this->hasMany(Review::class);
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     // Update rating
     public function updateRating()
@@ -71,5 +82,9 @@ class Event extends Model
         $this->avg_rating = $this->reviews()->avg('rating') ?? 0;
         $this->total_reviews = $this->reviews()->count();
         $this->save();
+    }
+    public function waitingRequests()
+    {
+        return $this->hasMany(\App\Models\WaitingRequest::class);
     }
 }

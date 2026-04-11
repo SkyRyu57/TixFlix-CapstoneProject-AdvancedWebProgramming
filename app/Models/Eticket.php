@@ -30,10 +30,13 @@ class Eticket extends Model
         });
     }
 
-    // Relasi ke transaksi
-    public function transaction() { return $this->belongsTo(Transaction::class); }
-    // Relasi ke jenis tiket
-    public function ticket() { return $this->belongsTo(Ticket::class); }
-    // Relasi ke pemilik
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class);
+    }
+    public function ticket()
+    {
+        return $this->belongsTo(Ticket::class);
+    }
     public function user() { return $this->belongsTo(User::class); }
 }
