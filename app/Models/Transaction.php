@@ -9,18 +9,15 @@ use App\Models\Eticket;
 class Transaction extends Model
 {
     protected $fillable = [
-        'order_id',
         'user_id',
-        'ticket_id',
-        'event_id',
         'total_price',
-        'quantity',
         'status',
-        'expires_at',
-        'paid_at',
         'reference_number',
-        'snap_token'
+        'snap_token',
         'payment_method',
+        'paid_at',
+        'payment_proof',
+        'payment_notes',
     ];
 
     protected static function boot()
@@ -28,12 +25,22 @@ class Transaction extends Model
         parent::boot();
 
         static::creating(function ($transaction) {
-            // Membuat nomor referensi unik, contoh: TRX-1710482938
-            $transaction->reference_number = 'TRX-' . time() . strtoupper(Str::random(4));
+            if (empty($transaction->reference_number)) {
+                $transaction->reference_number = 'TRX-' . time() . strtoupper(Str::random(4));
+            }
         });
     }
 
-    // Relasi: Transaksi ini milik siapa?
+    public function etickets()
+    {
+        return $this->hasMany(Eticket::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function payment()
     {
         return $this->hasOne(Payment::class);
