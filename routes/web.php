@@ -28,6 +28,104 @@ Route::middleware('guest')->group(function () {
     
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
     Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
+    Route::get('/forgot-password', function () {
+        return view('auth.forgot-password');
+    })->name('password.request');
+    
+    // API: Cek email di database
+    Route::post('/check-email', function (Request $request) {
+        $email = $request->email;
+        $user = \App\Models\User::where('email', $email)->first();
+        
+        if ($user) {
+            return response()->json([
+                'exists' => true,
+                'user_name' => $user->name,
+                'user_email' => $user->email
+            ]);
+        }
+        
+        return response()->json(['exists' => false]);
+    })->name('check.email');
+    
+    // API: Buat token reset password
+    Route::post('/create-reset-token', function (Request $request) {
+        $email = $request->email;
+        $user = \App\Models\User::where('email', $email)->first();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Email tidak ditemukan']);
+        }
+        
+        // Generate token
+        $token = Str::random(64);
+        
+        // Simpan token ke database
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            ['token' => $token, 'created_at' => now()]
+        );
+        
+        // Buat link reset password
+        $resetLink = url('/reset-password/' . $token . '?email=' . urlencode($email));
+        
+        return response()->json([
+            'success' => true,
+            'reset_link' => $resetLink,
+            'token' => $token
+        ]);
+    })->name('create.reset.token');
+    
+    // Form reset password (GET)
+    Route::get('/reset-password/{token}', function ($token) {
+        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('token', $token)
+            ->first();
+        
+        if (!$resetRecord) {
+            return redirect()->route('password.request')->with('error', 'Token tidak valid atau sudah kadaluarsa!');
+        }
+        
+        // Cek apakah token sudah lebih dari 60 menit
+        if (now()->diffInMinutes($resetRecord->created_at) > 60) {
+            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('token', $token)->delete();
+            return redirect()->route('password.request')->with('error', 'Link reset password sudah kadaluarsa! Silakan coba lagi.');
+        }
+        
+        return view('auth.reset-password', ['token' => $token, 'email' => $resetRecord->email]);
+    })->name('password.reset');
+    
+    // Proses reset password (POST)
+    Route::post('/reset-password', function (Request $request) {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+        
+        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', $request->token)
+            ->first();
+        
+        if (!$resetRecord) {
+            return back()->with('error', 'Token tidak valid!');
+        }
+        
+        // Update password user
+        $user = \App\Models\User::where('email', $request->email)->first();
+        if ($user) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            $user->save();
+        }
+        
+        // Hapus token
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->delete();
+        
+        return redirect()->route('login')->with('success', 'Password berhasil direset! Silakan login dengan password baru Anda.');
+    })->name('password.update');
 });
 
 // ============================================
@@ -225,34 +323,71 @@ Route::middleware('auth')->group(function () {
 // CUSTOMER
     // ========================================
     Route::middleware('role:customer')->group(function () {
-        // Route /dashboard sudah ditangani di atas, jadi tidak perlu di sini
-
-        Route::get('/concerts', function () {
-            $concerts = \App\Models\Event::with(['category', 'tickets'])
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'like', '%musik%')
-                          ->orWhere('name', 'like', '%Konser%')
-                          ->orWhere('name', 'like', '%Music%');
-                })
+        
+        Route::get('/dashboard', function () {
+            $categories = \App\Models\Category::all();
+            $pilihanEvents = \App\Models\Event::with(['category', 'tickets'])
+                ->where('status', 'published')
+                ->where('start_date', '>=', now())
+                ->orderBy('created_at', 'desc')
+                ->take(4)
+                ->get();
+            
+            $semuaEvents = \App\Models\Event::with(['category', 'tickets'])
                 ->where('status', 'published')
                 ->where('start_date', '>=', now())
                 ->orderBy('start_date', 'asc')
                 ->get();
-            return view('dashboard-customer.concerts', compact('concerts'));
-        })->name('concerts');
 
-        Route::get('/festivals', function () {
-            $festivals = \App\Models\Event::with(['category', 'tickets'])
-                ->whereHas('category', function($query) {
-                    $query->where('slug', 'like', '%festival%')
-                          ->orWhere('name', 'like', '%Festival%');
-                })
+            return view('dashboard-customer.customer', compact('categories', 'pilihanEvents', 'semuaEvents'));
+        })->name('dashboard');
+
+        // ========================================
+        // EVENT LIST
+        // ========================================
+        Route::get('/events', function () {
+            $search = request('search', '');
+            $location = request('location', '');
+            $categoryId = request('category', '');
+            
+            $query = \App\Models\Event::with(['category', 'tickets'])
+                ->where('status', 'published')
+                ->where('start_date', '>=', now());
+            
+            if (!empty($search)) {
+                $query->where('title', 'ilike', '%' . $search . '%');
+            }
+            
+            if (!empty($location)) {
+                $query->where('location', 'ilike', '%' . $location . '%');
+            }
+            
+            if (!empty($categoryId)) {
+                $query->where('category_id', $categoryId);
+            }
+            
+            $events = $query->orderBy('start_date', 'asc')->paginate(12);
+            $categories = \App\Models\Category::all();
+            
+            if (request()->ajax()) {
+                return response()->json($events);
+            }
+            
+            return view('dashboard-customer.events-list', compact('events', 'categories'));
+        })->name('events.list');
+
+        Route::get('/events/category/{id}', function ($id) {
+            $category = \App\Models\Category::findOrFail($id);
+            $events = \App\Models\Event::with(['category', 'tickets'])
+                ->where('category_id', $id)
                 ->where('status', 'published')
                 ->where('start_date', '>=', now())
                 ->orderBy('start_date', 'asc')
-                ->get();
-            return view('dashboard-customer.festivals', compact('festivals'));
-        })->name('festivals');
+                ->paginate(12);
+            
+            $categories = \App\Models\Category::all();
+            return view('dashboard-customer.events-list', compact('events', 'categories', 'category'));
+        })->name('events.category');
 
         Route::get('/category/{id}', function ($id) {
             $category = \App\Models\Category::findOrFail($id);
@@ -277,7 +412,10 @@ Route::middleware('auth')->group(function () {
             return view('dashboard-customer.show', compact('event', 'relatedEvents'));
         })->name('event.detail');
 
-        Route::post('/checkout', function (\Illuminate\Http\Request $request) {
+        // ========================================
+        // CHECKOUT & PAYMENT
+        // ========================================
+        Route::post('/checkout', function (Request $request) {
             $eventId = $request->event_id;
             $ticketData = $request->tickets;
             
@@ -295,7 +433,8 @@ Route::middleware('auth')->group(function () {
                 if ($quantity > 0) {
                     $ticket = \App\Models\Ticket::findOrFail($ticketId);
                     
-                    if ($ticket->stock < $quantity) {
+                    $availableStock = $ticket->stock;
+                    if ($availableStock < $quantity) {
                         return back()->with('error', 'Stok tiket "' . $ticket->name . '" tidak mencukupi!');
                     }
                     
@@ -316,99 +455,144 @@ Route::middleware('auth')->group(function () {
             }
             
             session([
-                'checkout_data' => [
-                    'event_id' => $eventId,
-                    'event' => $event,
-                    'selected_tickets' => $selectedTickets,
-                    'total_price' => $totalPrice,
-                    'total_tickets' => $totalTickets
-                ]
+                'checkout_event_id' => $eventId,
+                'checkout_selected_tickets' => $selectedTickets,
+                'checkout_total_price' => $totalPrice,
+                'checkout_total_tickets' => $totalTickets
             ]);
             
-            return view('dashboard-customer.checkout', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets'));
+            return redirect()->route('payment.page');
         })->name('checkout.process');
 
-        Route::post('/payment', function (\Illuminate\Http\Request $request) {
-            $eventId = $request->event_id;
-            $tickets = $request->tickets;
-            $totalPrice = $request->total_price;
-            return view('dashboard-customer.payment', compact('eventId', 'tickets', 'totalPrice'));
+        Route::get('/payment', function () {
+            $eventId = session('checkout_event_id');
+            $selectedTickets = session('checkout_selected_tickets', []);
+            $totalPrice = session('checkout_total_price', 0);
+            $totalTickets = session('checkout_total_tickets', 0);
+            
+            if (!$eventId || empty($selectedTickets)) {
+                return redirect()->route('dashboard')->with('error', 'Silakan pilih tiket terlebih dahulu.');
+            }
+            
+            $event = \App\Models\Event::findOrFail($eventId);
+            $orderId = 'ORD-' . strtoupper(Str::random(12)) . '-' . time() . '-' . rand(1000, 9999);
+            
+            return view('dashboard-customer.payment', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets', 'orderId'));
         })->name('payment.page');
 
-        Route::post('/payment/process', function (\Illuminate\Http\Request $request) {
-            $ticketData = $request->tickets;
-            
-            $totalPrice = 0;
-            $eventTitle = '';
-            $eventId = null;
-            $organizerId = null;
-            
-            if ($ticketData) {
-                foreach ($ticketData as $ticketId => $quantity) {
-                    if ($quantity > 0) {
-                        $ticket = \App\Models\Ticket::find($ticketId);
-                        if ($ticket) {
-                            $totalPrice += ($ticket->price * $quantity);
-                            $eventTitle = $ticket->event->title;
-                            $eventId = $ticket->event->id;
-                            $organizerId = $ticket->event->user_id;
-                        }
-                    }
+        // ========================================
+        // CONFIRM PAYMENT (UPLOAD BUKTI)
+        // ========================================
+        Route::post('/payment/confirm', function (Request $request) {
+            try {
+                $request->validate([
+                    'order_id' => 'required',
+                    'amount' => 'required|numeric',
+                    'proof_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                    'notes' => 'nullable|string'
+                ]);
+                
+                $proofPath = $request->file('proof_image')->store('payment_proofs', 'public');
+                
+                $eventId = session('checkout_event_id');
+                $selectedTickets = session('checkout_selected_tickets', []);
+                $totalPrice = session('checkout_total_price', 0);
+                
+                if (empty($selectedTickets)) {
+                    return response()->json(['success' => false, 'message' => 'Data tiket tidak ditemukan.']);
                 }
-            }
-
-            $transaction = \App\Models\Transaction::create([
-                'user_id' => auth()->id(),
-                'total_price' => $totalPrice,
-                'status' => 'paid',
-                'reference_number' => 'TRX-' . strtoupper(Str::random(10)),
-            ]);
-
-            $eticketCount = 0;
-            if ($ticketData) {
-                foreach ($ticketData as $ticketId => $quantity) {
-                    if ($quantity > 0) {
-                        $ticket = \App\Models\Ticket::find($ticketId);
-                        for ($i = 0; $i < $quantity; $i++) {
+                
+                $transaction = \App\Models\Transaction::create([
+                    'user_id' => auth()->id(),
+                    'reference_number' => $request->order_id,
+                    'total_price' => $totalPrice,
+                    'status' => 'pending',
+                    'payment_method' => 'bank_transfer',
+                ]);
+                
+                \App\Models\Payment::create([
+                    'user_id' => auth()->id(),
+                    'transaction_id' => $transaction->id,
+                    'order_id' => $request->order_id,
+                    'amount' => $request->amount,
+                    'proof_image' => $proofPath,
+                    'notes' => $request->notes,
+                    'status' => 'pending',
+                    'expired_at' => now()->addHours(24),
+                ]);
+                
+                // Buat eticket dengan status pending
+                foreach ($selectedTickets as $ticketData) {
+                    $ticket = \App\Models\Ticket::find($ticketData['ticket']['id']);
+                    if ($ticket) {
+                        for ($i = 0; $i < $ticketData['quantity']; $i++) {
                             \App\Models\Eticket::create([
                                 'transaction_id' => $transaction->id,
-                                'ticket_id' => $ticketId,
+                                'ticket_id' => $ticket->id,
                                 'user_id' => auth()->id(),
                                 'ticket_code' => 'TIX-' . strtoupper(Str::random(8)),
                                 'is_scanned' => false,
                             ]);
-                            $eticketCount++;
-                        }
-                        
-                        if($ticket && $ticket->stock >= $quantity) {
-                            $ticket->decrement('stock', $quantity);
                         }
                     }
+                }
+                
+                \App\Models\Notification::create([
+                    'user_id' => auth()->id(),
+                    'title' => 'Bukti Pembayaran Terkirim! ≡ƒôñ',
+                    'message' => 'Bukti pembayaran Anda telah terkirim. Tiket akan aktif setelah diverifikasi.',
+                    'type' => 'info',
+                    'link' => route('my-tickets'),
+                    'is_read' => false,
+                ]);
+                
+                session()->forget(['checkout_event_id', 'checkout_selected_tickets', 'checkout_total_price', 'checkout_total_tickets']);
+                
+                return response()->json(['success' => true, 'message' => 'Bukti pembayaran terkirim!']);
+                
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()]);
+            }
+        })->name('payment.confirm');
+
+        // ========================================
+        // VERIFIKASI PEMBAYARAN (TESTING)
+        // ========================================
+        Route::get('/verify-payment/{transactionId}', function ($transactionId) {
+            $transaction = \App\Models\Transaction::findOrFail($transactionId);
+            
+            $transaction->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+            
+            $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'verified',
+                    'verified_at' => now(),
+                ]);
+            }
+            
+            $etickets = \App\Models\Eticket::where('transaction_id', $transactionId)->get();
+            foreach ($etickets as $eticket) {
+                $ticket = \App\Models\Ticket::find($eticket->ticket_id);
+                if ($ticket) {
+                    $ticket->decrement('stock');
                 }
             }
             
             \App\Models\Notification::create([
-                'user_id' => auth()->id(),
-                'title' => 'Pembelian Tiket Berhasil! 🎉',
-                'message' => 'Anda telah membeli ' . $eticketCount . ' tiket untuk event "' . $eventTitle . '". Klik untuk lihat tiket Anda.',
+                'user_id' => $transaction->user_id,
+                'title' => 'Pembayaran Diverifikasi! Γ£à',
+                'message' => 'Pembayaran Anda telah diverifikasi. QR Code tiket sudah aktif!',
                 'type' => 'success',
                 'link' => route('my-tickets'),
                 'is_read' => false,
             ]);
             
-            if ($organizerId) {
-                \App\Models\Notification::create([
-                    'user_id' => $organizerId,
-                    'title' => 'Ada Pembelian Tiket Baru! 📢',
-                    'message' => auth()->user()->name . ' telah membeli ' . $eticketCount . ' tiket untuk event "' . $eventTitle . '".',
-                    'type' => 'info',
-                    'link' => route('organizer.attendees'), // pastikan route ini ada
-                    'is_read' => false,
-                ]);
-            }
-            
-            return redirect()->route('my-tickets')->with('success', 'Pembayaran berhasil! ' . $eticketCount . ' E-Ticket sudah terbit.');
-        })->name('payment.process');
+            return redirect()->route('my-tickets')->with('success', 'Pembayaran berhasil diverifikasi!');
+        })->name('payment.verify');
 
         Route::get('/my-tickets', function () {
             $myTickets = \App\Models\Eticket::with(['ticket.event', 'transaction'])
@@ -423,205 +607,52 @@ Route::middleware('auth')->group(function () {
                 ->where('ticket_code', $code)
                 ->where('user_id', auth()->id())
                 ->firstOrFail();
-            
             return view('dashboard-customer.ticket-print', compact('eticket'));
         })->name('ticket.print');
 
-        // REVIEW & RATING
-        Route::post('/event/{id}/review', function ($id, Request $request) {
-            $event = \App\Models\Event::findOrFail($id);
+        // ========================================
+        // WAITING LIST (CUSTOMER)
+        // ========================================
+        Route::post('/waiting-list/{ticketId}/add', function ($ticketId) {
+            $ticket = \App\Models\Ticket::find($ticketId);
             
-            $hasPurchased = \App\Models\Eticket::whereHas('ticket', function($q) use ($id) {
-                $q->where('event_id', $id);
-            })->where('user_id', auth()->id())->exists();
-            
-            if (!$hasPurchased) {
-                return back()->with('error', 'Anda hanya bisa mereview event yang sudah Anda datangi!');
+            if (!$ticket) {
+                return redirect()->back()->with('error', 'Tiket tidak ditemukan!');
             }
             
-            $isEventEnded = \Carbon\Carbon::parse($event->end_date)->isPast();
-            if (!$isEventEnded) {
-                return back()->with('error', 'Review hanya bisa diberikan setelah event selesai!');
-            }
-            
-            $request->validate([
-                'rating' => 'required|integer|min:1|max:5',
-                'comment' => 'nullable|string|max:1000',
-            ]);
-            
-            \App\Models\Review::updateOrCreate(
-                ['user_id' => auth()->id(), 'event_id' => $id],
-                ['rating' => $request->rating, 'comment' => $request->comment]
-            );
-            
-            $event->avg_rating = \App\Models\Review::where('event_id', $id)->avg('rating');
-            $event->total_reviews = \App\Models\Review::where('event_id', $id)->count();
-            $event->save();
-            
-            \App\Models\Notification::create([
-                'user_id' => $event->user_id,
-                'title' => 'Review Baru untuk Event Anda! ⭐',
-                'message' => auth()->user()->name . ' memberi rating ' . $request->rating . '/5 untuk event "' . $event->title . '"',
-                'type' => 'info',
-                'link' => route('organizer.event.detail', $event->id),
-                'is_read' => false,
-            ]);
-            
-            return back()->with('success', 'Terima kasih atas review Anda!');
-        })->name('review.store');
-
-        Route::get('/event/{id}/reviews', function ($id) {
-            $reviews = \App\Models\Review::with('user')
-                ->where('event_id', $id)
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-            
-            return response()->json($reviews);
-        })->name('reviews.get');
-
-        // WAITING LIST
-        Route::post('/waitinglist/{ticketId}/join', function ($ticketId, Request $request) {
-            $ticket = \App\Models\Ticket::findOrFail($ticketId);
-            $event = $ticket->event;
-            $quantity = $request->input('quantity', 1);
-            
-            $availableStock = $ticket->stock - \App\Models\Eticket::where('ticket_id', $ticketId)->count();
-            if ($availableStock > 0) {
-                return back()->with('error', 'Tiket masih tersedia! Silakan beli langsung.');
+            if ($ticket->stock > 0) {
+                return redirect()->back()->with('error', 'Tiket masih tersedia, silakan beli langsung!');
             }
             
             $existing = \App\Models\WaitingList::where('user_id', auth()->id())
                 ->where('ticket_id', $ticketId)
-                ->whereIn('status', ['waiting', 'notified'])
                 ->first();
             
             if ($existing) {
-                if ($existing->status == 'waiting') {
-                    return back()->with('error', 'Anda sudah terdaftar di waiting list untuk tiket ini!');
-                } elseif ($existing->status == 'notified') {
-                    return back()->with('info', 'Tiket sudah tersedia! Silakan cek halaman event dan beli sekarang.');
-                }
+                return redirect()->back()->with('error', 'Anda sudah terdaftar di waiting list!');
             }
             
-            $waiting = \App\Models\WaitingList::create([
+            \App\Models\WaitingList::create([
                 'user_id' => auth()->id(),
                 'ticket_id' => $ticketId,
-                'event_id' => $event->id,
-                'quantity' => $quantity,
-                'status' => 'waiting',
-                'expires_at' => now()->addDays(7),
+                'quantity' => 1,
+                'status' => 'waiting'
             ]);
             
-            \App\Models\Notification::create([
-                'user_id' => auth()->id(),
-                'title' => 'Berhasil Masuk Waiting List! 📝',
-                'message' => 'Anda terdaftar untuk ' . $quantity . ' tiket "' . $ticket->name . '" pada event "' . $event->title . '".',
-                'type' => 'success',
-                'link' => route('my-tickets'),
-                'is_read' => false,
-            ]);
-            
-            if ($event->user_id) {
-                \App\Models\Notification::create([
-                    'user_id' => $event->user_id,
-                    'title' => 'Ada yang Masuk Waiting List! 📋',
-                    'message' => auth()->user()->name . ' ingin ' . $quantity . ' tiket "' . $ticket->name . '" pada event "' . $event->title . '" (Tiket Habis).',
-                    'type' => 'info',
-                    'link' => route('organizer.waitinglist'),
-                    'is_read' => false,
-                ]);
-            }
-            
-            return back()->with('success', 'Berhasil masuk waiting list! Anda akan diberi tahu jika tiket tersedia.');
-        })->name('waitinglist.join');
+            return redirect()->back()->with('success', 'Berhasil masuk waiting list! Anda akan diberi tahu jika tiket tersedia.');
+        })->name('waitinglist.add');
 
-        Route::post('/waitinglist/{ticketId}/join-ajax', function ($ticketId, Request $request) {
-            $ticket = \App\Models\Ticket::findOrFail($ticketId);
-            $event = $ticket->event;
-            $quantity = $request->input('quantity', 1);
-            
-            $availableStock = $ticket->stock - \App\Models\Eticket::where('ticket_id', $ticketId)->count();
-            if ($availableStock > 0) {
-                return response()->json(['success' => false, 'message' => 'Tiket masih tersedia! Silakan beli langsung.']);
-            }
-            
-            $existing = \App\Models\WaitingList::where('user_id', auth()->id())
-                ->where('ticket_id', $ticketId)
-                ->whereIn('status', ['waiting', 'notified'])
-                ->first();
-            
-            if ($existing) {
-                if ($existing->status == 'waiting') {
-                    return response()->json(['success' => false, 'message' => 'Anda sudah terdaftar di waiting list untuk tiket ini!']);
-                } elseif ($existing->status == 'notified') {
-                    return response()->json(['success' => false, 'message' => 'Tiket sudah tersedia! Silakan cek halaman event dan beli sekarang.']);
-                }
-            }
-            
-            $waiting = \App\Models\WaitingList::create([
-                'user_id' => auth()->id(),
-                'ticket_id' => $ticketId,
-                'event_id' => $event->id,
-                'quantity' => $quantity,
-                'status' => 'waiting',
-                'expires_at' => now()->addDays(7),
-            ]);
-            
-            \App\Models\Notification::create([
-                'user_id' => auth()->id(),
-                'title' => 'Berhasil Masuk Waiting List! 📝',
-                'message' => 'Anda terdaftar untuk ' . $quantity . ' tiket "' . $ticket->name . '" pada event "' . $event->title . '".',
-                'type' => 'success',
-                'link' => route('my-tickets'),
-                'is_read' => false,
-            ]);
-            
-            if ($event->user_id) {
-                \App\Models\Notification::create([
-                    'user_id' => $event->user_id,
-                    'title' => 'Ada yang Masuk Waiting List! 📋',
-                    'message' => auth()->user()->name . ' ingin ' . $quantity . ' tiket "' . $ticket->name . '" pada event "' . $event->title . '" (Tiket Habis).',
-                    'type' => 'info',
-                    'link' => route('organizer.waitinglist'),
-                    'is_read' => false,
-                ]);
-            }
-            
-            return response()->json(['success' => true, 'message' => 'Berhasil masuk waiting list!']);
-        })->name('waitinglist.join.ajax');
-
-        Route::delete('/waitinglist/{ticketId}/cancel-ajax', function ($ticketId) {
+        Route::delete('/waiting-list/{ticketId}/remove', function ($ticketId) {
             $waiting = \App\Models\WaitingList::where('user_id', auth()->id())
                 ->where('ticket_id', $ticketId)
-                ->where('status', 'waiting')
                 ->first();
             
-            if (!$waiting) {
-                return response()->json(['success' => false, 'message' => 'Waiting list tidak ditemukan.']);
+            if ($waiting) {
+                $waiting->delete();
+                return redirect()->back()->with('success', 'Berhasil keluar dari waiting list.');
             }
             
-            $waiting->update(['status' => 'cancelled']);
-            
-            return response()->json(['success' => true, 'message' => 'Berhasil membatalkan waiting list.']);
-        })->name('waitinglist.cancel.ajax');
-
-        Route::get('/my-waiting-list', function () {
-            $waitingLists = \App\Models\WaitingList::with(['ticket.event'])
-                ->where('user_id', auth()->id())
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-            
-            return view('dashboard-customer.waiting-list', compact('waitingLists'));
-        })->name('waiting-list.my');
-
-        Route::delete('/waitinglist/{id}/cancel', function ($id) {
-            $waiting = \App\Models\WaitingList::where('user_id', auth()->id())
-                ->where('status', 'waiting')
-                ->findOrFail($id);
-            
-            $waiting->update(['status' => 'cancelled']);
-            
-            return back()->with('success', 'Berhasil membatalkan waiting list.');
-        })->name('waitinglist.cancel');
+            return redirect()->back()->with('error', 'Data tidak ditemukan.');
+        })->name('waitinglist.remove');
     });
 });
