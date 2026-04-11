@@ -10,20 +10,15 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            // User yang melakukan pembelian
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            
             $table->integer('total_price');
-            
-            // Sesuai soal: pending (belum bayar), paid (sudah bayar), failed (gagal)
             $table->enum('status', ['pending', 'paid', 'failed'])->default('pending');
-            
-            // Untuk simpan ID transaksi unik dari sistem kita
-            $table->string('reference_number')->unique(); 
-            
-            // Untuk integrasi payment gateway (misal Midtrans) nanti
-            $table->string('snap_token')->nullable(); 
-            
+            $table->string('reference_number')->unique();
+            $table->string('snap_token')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->timestamp('paid_at')->nullable();
+            $table->string('payment_proof')->nullable();
+            $table->text('payment_notes')->nullable();
             $table->timestamps();
         });
     }

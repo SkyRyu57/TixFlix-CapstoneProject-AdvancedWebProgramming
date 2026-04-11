@@ -1,236 +1,219 @@
 @extends('admin.layouts.master')
 
-@section('title', 'Dashboard')
+@section('title', 'Dasbor')
 
 @section('content')
-<!-- Sale & Revenue Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="row g-4">
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-chart-line fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Today Sale</p>
-                    <h6 class="mb-0">{{ number_format($todaySale) }}</h6>
-                </div>
+<div class="flex justify-between items-center mb-6 no-print">
+    <div>
+        <h1 class="text-3xl font-bold">Selamat datang, {{ auth()->user()->name }}!</h1>
+        <p class="text-gray-400 mt-1">Ikhtisar platform dan statistik</p>
+    </div>
+</div>
+
+<!-- Kartu Statistik -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="glass-card rounded-2xl p-6 stat-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center"><i data-lucide="calendar" class="w-6 h-6 text-blue-400"></i></div>
+            <span class="text-2xl font-bold">{{ number_format($totalEvents ?? 0) }}</span>
+        </div>
+        <h3 class="text-gray-400 text-sm">Total Event</h3>
+        <p class="text-xs text-gray-500 mt-1">Semua event di platform</p>
+    </div>
+    <div class="glass-card rounded-2xl p-6 stat-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center"><i data-lucide="ticket" class="w-6 h-6 text-green-400"></i></div>
+            <span class="text-2xl font-bold">{{ number_format($totalTicketsSold ?? 0) }}</span>
+        </div>
+        <h3 class="text-gray-400 text-sm">Tiket Terjual</h3>
+        <p class="text-xs text-gray-500 mt-1">Total tiket terjual</p>
+    </div>
+    <div class="glass-card rounded-2xl p-6 stat-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center"><i data-lucide="wallet" class="w-6 h-6 text-yellow-400"></i></div>
+            <span class="text-2xl font-bold">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</span>
+        </div>
+        <h3 class="text-gray-400 text-sm">Total Pendapatan</h3>
+        <p class="text-xs text-gray-500 mt-1">Dari semua transaksi berhasil</p>
+    </div>
+    <div class="glass-card rounded-2xl p-6 stat-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center"><i data-lucide="users" class="w-6 h-6 text-purple-400"></i></div>
+            <span class="text-2xl font-bold">{{ number_format($totalOrganizers ?? 0) }}</span>
+        </div>
+        <h3 class="text-gray-400 text-sm">Penyelenggara</h3>
+        <p class="text-xs text-gray-500 mt-1">Penyelenggara aktif</p>
+    </div>
+</div>
+
+<!-- Grafik dan Info Cepat -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="glass-card rounded-2xl p-6 lg:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="chart-line" class="w-5 h-5 text-[#ff2d55]"></i> Tren Pendapatan</h2>
+            <div class="flex gap-2">
+                <select id="chartTypeSelect" class="bg-black/30 border border-white/20 rounded-lg px-3 py-1 text-sm text-white">
+                    <option value="line">Grafik Garis</option>
+                    <option value="bar">Grafik Batang</option>
+                    <option value="pie">Grafik Lingkaran (per Event)</option>
+                </select>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-chart-bar fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Total Sale</p>
-                    <h6 class="mb-0">{{ number_format($totalSale) }}</h6>
+        <canvas id="revenueChart" height="250"></canvas>
+    </div>
+    <div class="glass-card rounded-2xl p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5 text-yellow-400"></i> Notifikasi Terbaru</h2>
+        <div class="space-y-3 max-h-80 overflow-y-auto">
+            @forelse($recentNotifications ?? [] as $notif)
+                <div class="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
+                    <p class="text-sm font-semibold">{{ $notif->title }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ Str::limit($notif->message, 80) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $notif->created_at->diffForHumans() }}</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-chart-area fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Today Revenue</p>
-                    <h6 class="mb-0">Rp {{ number_format($todayRevenue, 0, ',', '.') }}</h6>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-chart-pie fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Total Revenue</p>
-                    <h6 class="mb-0">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h6>
-                </div>
-            </div>
+            @empty
+                <p class="text-gray-500 text-center">Tidak ada notifikasi</p>
+            @endforelse
         </div>
     </div>
 </div>
-<!-- Sale & Revenue End -->
 
-<!-- Sales Chart & Pending Events Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="row g-4">
-        <div class="col-sm-12 col-xl-6">
-            <div class="bg-secondary text-center rounded p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h6 class="mb-0">Sales & Revenue (Last 7 Days)</h6>
+<!-- Tabel Ringkasan Pengguna dan Event -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="glass-card rounded-2xl p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i> Penyelenggara Terbaru</h2>
+        <div class="space-y-3">
+            @forelse($recentOrganizers ?? [] as $org)
+                <div class="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                    <div>
+                        <p class="font-semibold">{{ $org->name }}</p>
+                        <p class="text-xs text-gray-400">{{ $org->email }}</p>
+                    </div>
+                    <span class="text-xs text-gray-500">Bergabung: {{ $org->created_at->format('d M Y') }}</span>
                 </div>
-                <canvas id="salesRevenueChart" height="250"></canvas>
-            </div>
+            @empty
+                <p class="text-gray-500 text-center">Belum ada penyelenggara</p>
+            @endforelse
         </div>
-        <div class="col-sm-12 col-xl-6">
-            <div class="bg-secondary text-center rounded p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h6 class="mb-0">Pending Events</h6>
-                    <a href="{{ route('admin.events.pending') }}">Show All</a>
+    </div>
+    <div class="glass-card rounded-2xl p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5 text-green-400"></i> Event Terbaru</h2>
+        <div class="space-y-3">
+            @forelse($recentEvents ?? [] as $ev)
+                <div class="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                    <div>
+                        <p class="font-semibold">{{ $ev->title }}</p>
+                        <p class="text-xs text-gray-400">Oleh: {{ $ev->user->name ?? 'Admin' }}</p>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ $ev->created_at->format('d M Y') }}</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="table text-start align-middle table-bordered table-hover mb-0">
-                        <thead>
-                            <tr class="text-white">
-                                <th>Event</th>
-                                <th>Organizer</th>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($pendingEvents as $event)
-                            <tr>
-                                <td>{{ Str::limit($event->title, 30) }}</td>
-                                <td>{{ $event->user->name }}</td>
-                                <td>{{ $event->created_at->format('d M Y') }}</td>
-                                <td>
-                                    <form action="{{ route('admin.events.approve', $event) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                    </form>
-                                    <form action="{{ route('admin.events.reject', $event) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center">No pending events</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            @empty
+                <p class="text-gray-500 text-center">Belum ada event</p>
+            @endforelse
         </div>
     </div>
 </div>
-<!-- Sales Chart & Pending Events End -->
 
-<!-- Recent Transactions Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="bg-secondary text-center rounded p-4">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <h6 class="mb-0">Recent Transactions</h6>
-            <a href="{{ route('admin.transactions.index') }}">Show All</a>
-        </div>
-        <div class="table-responsive">
-            <table class="table text-start align-middle table-bordered table-hover mb-0">
-                <thead>
-                    <tr class="text-white">
-                        <th>Date</th>
-                        <th>Invoice</th>
-                        <th>Customer</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($recentTransactions as $transaction)
-                    <tr>
-                        <td>{{ $transaction->created_at->format('d M Y') }}</td>
-                        <td>{{ $transaction->reference_number }}</td>
-                        <td>{{ $transaction->user->name ?? 'N/A' }}</td>
-                        <td>Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
-                        <td>
-                            @if($transaction->status == 'paid')
-                                <span class="badge bg-success text-white">Paid</span>
-                            @elseif($transaction->status == 'pending')
-                                <span class="badge bg-warning">Pending</span>
-                            @else
-                                <span class="badge bg-danger text-white">Failed</span>
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ route('admin.transactions.show', $transaction) }}" class="btn btn-sm btn-primary">Detail</a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="text-center">No transactions yet</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-<!-- Recent Transactions End -->
-
-<!-- Quick Stats Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="row g-4">
-        <div class="col-sm-12 col-md-4">
-            <div class="bg-secondary rounded p-4">
-                <small>Total Events</small>
-                <h5>{{ \App\Models\Event::count() }}</h5>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-4">
-            <div class="bg-secondary rounded p-4">
-                <small>Total Users</small>
-                <h5>{{ \App\Models\User::count() }}</h5>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-4">
-            <div class="bg-secondary rounded p-4">
-                <small>Total Tickets Sold</small>
-                <h5>{{ \App\Models\Eticket::count() }}</h5>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Quick Stats End -->
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('salesRevenueChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: @json($chartLabels),
-            datasets: [
-                {
-                    label: 'Number of Sales',
-                    data: @json($chartSales),
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.1,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Revenue (Rp)',
-                    data: @json($chartRevenues),
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    tension: 0.1,
-                    yAxisID: 'y1'
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data dari controller
+        const monthLabels = @json($monthLabels ?? []);
+        const revenueData = @json($revenueData ?? []);
+        const eventRevenueData = @json($eventRevenueData ?? []);
+        
+        const canvas = document.getElementById('revenueChart');
+        const ctx = canvas.getContext('2d');
+        let currentChart = null;
+        
+        function showMessage(message) {
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+            ctx.fillStyle = '#9ca3af';
+            ctx.textAlign = 'center';
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+        }
+        
+        function renderChart(type) {
+            if (type === 'pie') {
+                const labels = Object.keys(eventRevenueData);
+                const data = Object.values(eventRevenueData);
+                if (labels.length === 0) {
+                    showMessage('Tidak ada data untuk grafik lingkaran');
+                    return;
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            let value = context.raw;
-                            if (context.dataset.label.includes('Revenue')) {
-                                value = 'Rp ' + value.toLocaleString('id-ID');
-                            }
-                            return label + ': ' + value;
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#ff2d55', '#ff5e3a', '#5946ea', '#10b981', '#f59e0b']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#fff' } }
                         }
                     }
+                });
+            } else {
+                if (monthLabels.length === 0 || revenueData.length === 0) {
+                    showMessage('Tidak ada data pendapatan');
+                    return;
                 }
-            },
-            scales: {
-                y: { title: { display: true, text: 'Number of Sales' }, beginAtZero: true },
-                y1: { position: 'right', title: { display: true, text: 'Revenue (Rp)' }, beginAtZero: true, grid: { drawOnChartArea: false } }
+                if (currentChart) currentChart.destroy();
+                currentChart = new Chart(ctx, {
+                    type: type,
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Pendapatan (Rp)',
+                            data: revenueData,
+                            borderColor: '#ff2d55',
+                            backgroundColor: type === 'line' ? 'rgba(255,45,85,0.1)' : '#ff2d55',
+                            tension: 0.3,
+                            fill: type === 'line'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(val) {
+                                        return 'Rp ' + val.toLocaleString();
+                                    },
+                                    color: '#fff'
+                                },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            },
+                            x: {
+                                ticks: { color: '#fff' },
+                                grid: { color: 'rgba(255,255,255,0.1)' }
+                            }
+                        }
+                    }
+                });
             }
+        }
+        
+        const chartTypeSelect = document.getElementById('chartTypeSelect');
+        if (chartTypeSelect) {
+            renderChart(chartTypeSelect.value);
+            chartTypeSelect.addEventListener('change', function(e) {
+                renderChart(e.target.value);
+            });
+        } else {
+            renderChart('line');
         }
     });
 </script>
-@endpush
 @endsection

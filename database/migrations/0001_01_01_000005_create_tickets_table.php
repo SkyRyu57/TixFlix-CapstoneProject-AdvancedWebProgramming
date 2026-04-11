@@ -10,14 +10,11 @@ return new class extends Migration
     {
         Schema::create('tickets', function (Blueprint $table) {
             $table->id();
-            // Relasi ke tabel events
             $table->foreignId('event_id')->constrained()->onDelete('cascade');
-            
-            $table->string('name'); // Contoh: 'VIP', 'Early Bird', 'Reguler'
-            $table->integer('price')->default(0); // Harga tiket (0 berarti gratis)
-            $table->integer('stock'); // Kuota tiket
-            $table->text('description')->nullable(); // Opsional: misal "Free drink & snack"
-            
+            $table->string('name');
+            $table->integer('price')->default(0);
+            $table->integer('stock');
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
