@@ -41,11 +41,11 @@
                     <a href="{{ route('admin.payments.show', $tx) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Detail</a>
                 </div>
             </div>
-            <!-- Bukti Pembayaran -->
+            <!-- Bukti Pembayaran (dari relasi payment) -->
             <div class="w-full lg:w-80">
-                @if($tx->payment_proof)
+                @if($tx->payment && $tx->payment->proof_image)
                 <div class="bg-black/30 rounded-lg p-2 text-center">
-                    <img src="{{ asset('storage/' . $tx->payment_proof) }}" class="max-h-48 mx-auto rounded cursor-pointer" onclick="window.open(this.src)">
+                    <img src="{{ asset('storage/' . $tx->payment->proof_image) }}" class="max-h-48 mx-auto rounded cursor-pointer" onclick="window.open(this.src)">
                     <p class="text-xs text-gray-500 mt-2">Klik gambar untuk memperbesar</p>
                 </div>
                 @else

@@ -341,35 +341,99 @@ Route::middleware('auth')->group(function () {
         })->name('payment.page');
 
         Route::post('/payment/confirm', function (Request $request) {
-            try {
-                $request->validate([
-                    'order_id' => 'required',
-                    'amount' => 'required|numeric',
-                    'proof_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-                    'notes' => 'nullable|string'
-                ]);
-                $proofPath = $request->file('proof_image')->store('payment_proofs', 'public');
-                $eventId = session('checkout_event_id');
-                $selectedTickets = session('checkout_selected_tickets', []);
-                $totalPrice = session('checkout_total_price', 0);
-                if (empty($selectedTickets)) return response()->json(['success' => false, 'message' => 'Data tiket tidak ditemukan.']);
-                $transaction = \App\Models\Transaction::create(['user_id' => auth()->id(), 'reference_number' => $request->order_id, 'total_price' => $totalPrice, 'status' => 'pending', 'payment_method' => 'bank_transfer']);
-                \App\Models\Payment::create(['user_id' => auth()->id(), 'transaction_id' => $transaction->id, 'order_id' => $request->order_id, 'amount' => $request->amount, 'proof_image' => $proofPath, 'notes' => $request->notes, 'status' => 'pending', 'expired_at' => now()->addHours(24)]);
-                foreach ($selectedTickets as $ticketData) {
-                    $ticket = \App\Models\Ticket::find($ticketData['ticket']['id']);
-                    if ($ticket) {
-                        for ($i = 0; $i < $ticketData['quantity']; $i++) {
-                            \App\Models\Eticket::create(['transaction_id' => $transaction->id, 'ticket_id' => $ticket->id, 'user_id' => auth()->id(), 'ticket_code' => 'TIX-' . strtoupper(Str::random(8)), 'is_scanned' => false]);
-                        }
+        try {
+            $request->validate([
+                'order_id' => 'required',
+                'amount' => 'required|numeric',
+                'proof_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'notes' => 'nullable|string'
+            ]);
+            
+            $proofPath = $request->file('proof_image')->store('payment_proofs', 'public');
+            
+            // Cek apakah ini checkout dari waiting request
+            $waitingRequestId = session('checkout_waiting_request_id');
+            $selectedTickets = session('checkout_selected_tickets', []);
+            $totalPrice = session('checkout_total_price', 0);
+            
+            if ($waitingRequestId) {
+                $waiting = \App\Models\WaitingRequest::with('ticket')->find($waitingRequestId);
+                if (!$waiting || $waiting->status != 'invited' || ($waiting->expires_at && now()->greaterThan($waiting->expires_at))) {
+                    return response()->json(['success' => false, 'message' => 'Waiting request tidak valid atau sudah kadaluarsa.']);
+                }
+                $ticket = $waiting->ticket;
+                $selectedTickets = [
+                    [
+                        'ticket' => $ticket,
+                        'quantity' => $waiting->quantity,
+                        'subtotal' => $ticket->price * $waiting->quantity,
+                    ]
+                ];
+                $totalPrice = $ticket->price * $waiting->quantity;
+            } elseif (empty($selectedTickets)) {
+                return response()->json(['success' => false, 'message' => 'Data tiket tidak ditemukan.']);
+            }
+            
+            // Buat transaksi
+            $transaction = \App\Models\Transaction::create([
+                'user_id' => auth()->id(),
+                'reference_number' => $request->order_id,
+                'total_price' => $totalPrice,
+                'status' => 'pending',
+                'payment_method' => 'bank_transfer',
+            ]);
+            
+            // Simpan bukti pembayaran
+            \App\Models\Payment::create([
+                'user_id' => auth()->id(),
+                'transaction_id' => $transaction->id,
+                'order_id' => $request->order_id,
+                'amount' => $request->amount,
+                'proof_image' => $proofPath,
+                'notes' => $request->notes,
+                'status' => 'pending',
+                'expired_at' => now()->addHours(24),
+            ]);
+            
+            // Buat e-tickets
+            foreach ($selectedTickets as $ticketData) {
+                $ticket = \App\Models\Ticket::find($ticketData['ticket']['id']);
+                if ($ticket) {
+                    for ($i = 0; $i < $ticketData['quantity']; $i++) {
+                        \App\Models\Eticket::create([
+                            'transaction_id' => $transaction->id,
+                            'ticket_id' => $ticket->id,
+                            'user_id' => auth()->id(),
+                            'ticket_code' => 'TIX-' . strtoupper(Str::random(8)),
+                            'is_scanned' => false,
+                        ]);
                     }
                 }
-                \App\Models\Notification::create(['user_id' => auth()->id(), 'title' => 'Bukti Pembayaran Terkirim! 📤', 'message' => 'Bukti pembayaran Anda telah terkirim. Tiket akan aktif setelah diverifikasi.', 'type' => 'info', 'link' => route('my-tickets'), 'is_read' => false]);
-                session()->forget(['checkout_event_id', 'checkout_selected_tickets', 'checkout_total_price', 'checkout_total_tickets']);
-                return response()->json(['success' => true, 'message' => 'Bukti pembayaran terkirim!']);
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()]);
             }
-        })->name('payment.confirm');
+            
+            // Jika dari waiting request, update status
+            if ($waitingRequestId) {
+                $waiting->update(['status' => 'completed']);
+                session()->forget('checkout_waiting_request_id');
+            }
+            
+            \App\Models\Notification::create([
+                'user_id' => auth()->id(),
+                'title' => 'Bukti Pembayaran Terkirim! 📤',
+                'message' => 'Bukti pembayaran Anda telah terkirim. Tiket akan aktif setelah diverifikasi.',
+                'type' => 'info',
+                'link' => route('my-tickets'),
+                'is_read' => false,
+            ]);
+            
+            session()->forget(['checkout_event_id', 'checkout_selected_tickets', 'checkout_total_price', 'checkout_total_tickets']);
+            
+            return response()->json(['success' => true, 'message' => 'Bukti pembayaran terkirim!']);
+            
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    })->name('payment.confirm');
 
         Route::get('/verify-payment/{transactionId}', function ($transactionId) {
             $transaction = \App\Models\Transaction::findOrFail($transactionId);
@@ -396,18 +460,38 @@ Route::middleware('auth')->group(function () {
         })->name('ticket.print');
 
         // Waiting List Customer
-        Route::post('/waiting-list/{ticketId}/add', function ($ticketId) {
-            $ticket = \App\Models\Ticket::find($ticketId);
-            if (!$ticket) return redirect()->back()->with('error', 'Tiket tidak ditemukan!');
-            if ($ticket->stock > 0) return redirect()->back()->with('error', 'Tiket masih tersedia, silakan beli langsung!');
-            $existing = \App\Models\WaitingList::where('user_id', auth()->id())->where('ticket_id', $ticketId)->first();
-            if ($existing) return redirect()->back()->with('error', 'Anda sudah terdaftar di waiting list!');
-            \App\Models\WaitingList::create(['user_id' => auth()->id(), 'ticket_id' => $ticketId, 'quantity' => 1, 'status' => 'waiting']);
-            return redirect()->back()->with('success', 'Berhasil masuk waiting list! Anda akan diberi tahu jika tiket tersedia.');
-        })->name('waitinglist.add');
+        Route::get('/pesanan-perlu-dibayar', function () {
+            $waitingRequests = \App\Models\WaitingRequest::where('user_id', auth()->id())
+                ->where('status', 'invited')
+                ->where(function($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $waitingItems = [];
+            foreach ($waitingRequests as $wr) {
+                $ticket = \App\Models\Ticket::where('event_id', $wr->event_id)->first();
+                if (!$ticket) continue;
+                $event = \App\Models\Event::find($wr->event_id);
+                if (!$event) continue;
+                $waitingItems[] = (object) [
+                    'id' => $wr->id,
+                    'event_title' => $event->title,
+                    'event_start_date' => $event->start_date,
+                    'event_location' => $event->location,
+                    'ticket_name' => $ticket->name,
+                    'ticket_price' => $ticket->price,
+                    'quantity' => $wr->quantity,
+                    'expires_at' => $wr->expires_at,
+                ];
+            }
+
+            return view('customer.waiting-list', compact('waitingItems'));
+        })->name('customer.waiting-list');
 
         Route::delete('/waiting-list/{ticketId}/remove', function ($ticketId) {
-            $waiting = \App\Models\WaitingList::where('user_id', auth()->id())->where('ticket_id', $ticketId)->first();
+            $waiting = \App\Models\WaitingRequest::where('user_id', auth()->id())->where('ticket_id', $ticketId)->first();
             if ($waiting) {
                 $waiting->delete();
                 return redirect()->back()->with('success', 'Berhasil keluar dari waiting list.');
@@ -416,30 +500,52 @@ Route::middleware('auth')->group(function () {
         })->name('waitinglist.remove');
 
         Route::get('/my-waiting-list', function () {
-            $waitingLists = \App\Models\WaitingList::with(['ticket.event'])->where('user_id', auth()->id())->orderBy('created_at', 'desc')->paginate(10);
+            $waitingLists = \App\Models\WaitingRequest::with(['ticket.event'])->where('user_id', auth()->id())->orderBy('created_at', 'desc')->paginate(10);
             return view('customer.waiting-list', compact('waitingLists'));
         })->name('waiting-list.my');
 
-        // Review & Rating
-        Route::post('/event/{id}/review', function ($id, Request $request) {
-            $event = \App\Models\Event::findOrFail($id);
-            $hasPurchased = \App\Models\Eticket::whereHas('ticket', function($q) use ($id) { $q->where('event_id', $id); })->where('user_id', auth()->id())->exists();
-            if (!$hasPurchased) return back()->with('error', 'Anda hanya bisa mereview event yang sudah Anda datangi!');
-            $isEventEnded = \Carbon\Carbon::parse($event->end_date)->isPast();
-            if (!$isEventEnded) return back()->with('error', 'Review hanya bisa diberikan setelah event selesai!');
-            $request->validate(['rating' => 'required|integer|min:1|max:5', 'comment' => 'nullable|string|max:1000']);
-            \App\Models\Review::updateOrCreate(['user_id' => auth()->id(), 'event_id' => $id], ['rating' => $request->rating, 'comment' => $request->comment]);
-            $event->avg_rating = \App\Models\Review::where('event_id', $id)->avg('rating');
-            $event->total_reviews = \App\Models\Review::where('event_id', $id)->count();
-            $event->save();
-            \App\Models\Notification::create(['user_id' => $event->user_id, 'title' => 'Review Baru untuk Event Anda! ⭐', 'message' => auth()->user()->name . ' memberi rating ' . $request->rating . '/5 untuk event "' . $event->title . '"', 'type' => 'info', 'link' => route('organizer.event.detail', $event->id), 'is_read' => false]);
-            return back()->with('success', 'Terima kasih atas review Anda!');
-        })->name('review.store');
-
-        Route::get('/event/{id}/reviews', function ($id) {
-            $reviews = \App\Models\Review::with('user')->where('event_id', $id)->orderBy('created_at', 'desc')->paginate(10);
-            return response()->json($reviews);
-        })->name('reviews.get');
+        Route::get('/waiting-checkout/{waitingRequest}', function ($waitingRequestId) {
+            $wr = \App\Models\WaitingRequest::where('user_id', auth()->id())->findOrFail($waitingRequestId);
+            
+            if ($wr->status !== 'invited') {
+                return redirect()->route('my-tickets')->with('error', 'Undangan tidak valid.');
+            }
+            if ($wr->expires_at && now()->greaterThan($wr->expires_at)) {
+                $wr->update(['status' => 'expired']);
+                return redirect()->route('my-tickets')->with('error', 'Waktu pembayaran telah habis.');
+            }
+            
+            // Ambil tiket (jika null, cari dari event)
+            $ticket = $wr->ticket ?? \App\Models\Ticket::where('event_id', $wr->event_id)->first();
+            if (!$ticket) {
+                return redirect()->route('my-tickets')->with('error', 'Tiket tidak ditemukan.');
+            }
+            
+            $event = $ticket->event;
+            $quantity = $wr->quantity;
+            $totalPrice = $ticket->price * $quantity;
+            $orderId = 'ORD-' . strtoupper(Str::random(12)) . '-' . time() . '-' . rand(1000, 9999);
+            
+            // Definisikan variabel yang akan dikirim ke view
+            $selectedTickets = [
+                [
+                    'ticket' => $ticket,
+                    'quantity' => $quantity,
+                    'subtotal' => $totalPrice,
+                ]
+            ];
+            $totalTickets = $quantity;
+            
+            session([
+                'checkout_event_id' => $event->id,
+                'checkout_selected_tickets' => $selectedTickets,
+                'checkout_total_price' => $totalPrice,
+                'checkout_total_tickets' => $totalTickets,
+                'checkout_waiting_request_id' => $wr->id,
+            ]);
+            
+            return view('customer.payment', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets', 'orderId'));
+        })->name('waiting.checkout');
     });
 });
 

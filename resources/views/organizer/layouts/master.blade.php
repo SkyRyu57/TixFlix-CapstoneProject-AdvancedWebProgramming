@@ -183,7 +183,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="{{ route('organizer.scan.index') }}" class="nav-link {{ request()->routeIs('organizer.scan.*') ? 'active' : '' }}  ">
                     <i class="fas fa-qrcode me-2"></i> Scan Ticket
                 </a>
             </li>

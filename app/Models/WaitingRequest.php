@@ -19,4 +19,8 @@ class WaitingRequest extends Model
     {
         return $this->belongsTo(Event::class);
     }
+    public function ticket()
+    {
+        return $this->belongsTo(Ticket::class);
+    }
 }
