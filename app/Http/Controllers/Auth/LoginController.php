@@ -31,9 +31,9 @@ class LoginController extends Controller
 
             // Redirect berdasarkan role
             if ($user->role == 'admin') {
-                return redirect()->intended('/admin/dashboard');
+                return redirect()->intended('/dashboard');
             } elseif ($user->role == 'organizer') {
-                return redirect()->intended('/organizer/dashboard');
+                return redirect()->intended('/dashboard');
             } else {
                 return redirect()->intended('/dashboard');
             }
