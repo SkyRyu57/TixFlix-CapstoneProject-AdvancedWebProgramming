@@ -175,7 +175,7 @@
                                 </div>
                                 
                                 @php
-                                    $isWaiting = \App\Models\WaitingList::where('user_id', auth()->id())
+                                    $isWaiting = \App\Models\WaitingRequest::where('user_id', auth()->id())
                                         ->where('ticket_id', $ticket->id)
                                         ->exists();
                                 @endphp

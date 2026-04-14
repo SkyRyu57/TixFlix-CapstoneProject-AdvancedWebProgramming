@@ -11,9 +11,12 @@ class PaymentController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with('user')
+        // Ambil transaksi dengan status pending dan memiliki relasi payment (dengan proof_image)
+        $transactions = Transaction::with(['user', 'payment'])
             ->where('status', 'pending')
-            ->whereNotNull('payment_proof')
+            ->whereHas('payment', function($q) {
+                $q->whereNotNull('proof_image');
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(15);
         return view('admin.payments.index', compact('transactions'));
@@ -21,20 +24,41 @@ class PaymentController extends Controller
 
     public function show(Transaction $transaction)
     {
+        $transaction->load(['user', 'payment', 'etickets.ticket']);
         return view('admin.payments.show', compact('transaction'));
     }
 
     public function approve(Transaction $transaction)
     {
+        if ($transaction->status !== 'pending') {
+            return back()->with('error', 'Transaksi sudah diproses sebelumnya.');
+        }
+
         $transaction->status = 'paid';
         $transaction->paid_at = now();
         $transaction->save();
+
+        // Update status payment jika ada
+        if ($transaction->payment) {
+            $transaction->payment->update([
+                'status' => 'verified',
+                'verified_at' => now(),
+            ]);
+        }
 
         // Update e-tickets: set issued_at jika belum
         foreach ($transaction->etickets as $eticket) {
             if (!$eticket->issued_at) {
                 $eticket->issued_at = now();
                 $eticket->save();
+            }
+        }
+
+        // Kurangi stok tiket (karena saat upload bukti stok belum dikurangi)
+        foreach ($transaction->etickets as $eticket) {
+            $ticket = $eticket->ticket;
+            if ($ticket && $ticket->stock > 0) {
+                $ticket->decrement('stock');
             }
         }
 
@@ -53,8 +77,17 @@ class PaymentController extends Controller
 
     public function reject(Transaction $transaction)
     {
+        if ($transaction->status !== 'pending') {
+            return back()->with('error', 'Transaksi sudah diproses sebelumnya.');
+        }
+
         $transaction->status = 'failed';
         $transaction->save();
+
+        // Update status payment jika ada
+        if ($transaction->payment) {
+            $transaction->payment->update(['status' => 'rejected']);
+        }
 
         Notification::create([
             'user_id' => $transaction->user_id,

@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
+        /* (style sama seperti yang sudah ada, tidak diubah) */
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0b10; }
         .glass-panel {
             background: rgba(18, 18, 24, 0.6);
@@ -26,19 +27,13 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
         .qr-hover { transition: all 0.3s ease; }
         .qr-hover:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255, 45, 85, 0.3); }
         .btn-print { transition: all 0.3s ease; }
         .btn-print:hover { transform: translateY(-2px); }
         .dropdown-menu { position: absolute; right: 0; top: 100%; margin-top: 8px; min-width: 200px; z-index: 100; }
-        
-        /* Pending status animation */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
         .pending-pulse { animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="bg-[#0b0b0f] text-gray-100 font-sans antialiased min-h-screen">
@@ -49,7 +44,7 @@
         <div class="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] rounded-full bg-[#6a5af9]/10 blur-[120px]"></div>
     </div>
 
-    <!-- Navbar -->
+    <!-- Navbar (sama seperti sebelumnya) -->
     <nav class="sticky top-0 z-50 glass-panel border-b border-white/10 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
@@ -127,6 +122,25 @@
             </div>
         @endif
 
+        <!-- Tombol untuk mengakses halaman waiting list (undangan pembayaran) -->
+        <div class="mb-6 flex justify-end">
+            <a href="{{ route('customer.waiting-list') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-xl font-medium transition-colors">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                Pesanan Perlu Dibayar
+                @php
+                    $waitingCount = \App\Models\WaitingRequest::where('user_id', auth()->id())
+                                        ->where('status', 'invited')
+                                        ->where(function($q) {
+                                            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                                        })->count();
+                @endphp
+                @if($waitingCount > 0)
+                    <span class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 ml-1">{{ $waitingCount }}</span>
+                @endif
+            </a>
+        </div>
+
+        <!-- ======================== MY TICKETS ======================== -->
         <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
                 <h1 class="text-4xl font-extrabold mb-2">My E-Tickets</h1>
@@ -146,19 +160,14 @@
                     $isUpcoming = \Carbon\Carbon::parse($event->start_date)->isFuture();
                     $statusColor = $eticket->is_scanned ? 'bg-gray-500/20 text-gray-400' : ($isUpcoming ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400');
                     $statusText = $eticket->is_scanned ? 'USED' : ($isUpcoming ? 'UPCOMING' : 'EXPIRED');
-                    
-                    // Cek status transaksi untuk verifikasi pembayaran
                     $transactionStatus = $eticket->transaction->status ?? 'pending';
                     $isPaymentPending = $transactionStatus == 'pending';
                     $isPaymentVerified = $transactionStatus == 'paid';
-                    
-                    // Jika tiket sudah discan, QR tetap bisa dilihat
                     $showQR = !$isPaymentPending || $eticket->is_scanned;
                 @endphp
                 <div class="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row gap-6 items-center hover:border-[#ff2d55]/30 transition-all duration-300 group">
                     <div class="absolute -top-10 -right-10 w-40 h-40 bg-[#ff2d55]/10 rounded-full blur-[40px] pointer-events-none"></div>
                     
-                    <!-- QR Code Section - Hanya tampil jika pembayaran sudah diverifikasi -->
                     @if($showQR)
                         <div class="w-32 h-32 bg-white p-2 rounded-xl shrink-0 flex items-center justify-center shadow-lg shadow-black/50 qr-hover cursor-pointer"
                              onclick="window.open('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ $eticket->ticket_code }}', '_blank')">
@@ -166,7 +175,6 @@
                                  alt="QR Code" class="w-full h-full object-contain">
                         </div>
                     @else
-                        <!-- Pending Payment Placeholder -->
                         <div class="w-32 h-32 bg-white/5 rounded-xl shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-yellow-500/50 pending-pulse">
                             <i data-lucide="clock" class="w-10 h-10 text-yellow-400 mb-2"></i>
                             <span class="text-xs text-yellow-400">Menunggu<br>Verifikasi</span>
@@ -176,8 +184,6 @@
                     <div class="flex-1 w-full border-t border-dashed border-white/20 pt-6 md:border-t-0 md:border-l md:pt-0 md:pl-6 relative z-10">
                         <div class="flex justify-between items-start mb-2 flex-wrap gap-2">
                             <span class="text-xs font-bold {{ $statusColor }} px-2.5 py-1 rounded-md">{{ $statusText }}</span>
-                            
-                            <!-- Status Pembayaran -->
                             @if($isPaymentPending)
                                 <span class="text-xs font-bold bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-md flex items-center gap-1">
                                     <i data-lucide="clock" class="w-3 h-3"></i> Menunggu Verifikasi
@@ -187,7 +193,6 @@
                                     <i data-lucide="check-circle" class="w-3 h-3"></i> Pembayaran Diverifikasi
                                 </span>
                             @endif
-                            
                             <span class="text-xs font-mono text-gray-400 bg-black/30 px-2 py-1 rounded-md">{{ $eticket->ticket_code }}</span>
                         </div>
                         <h3 class="text-xl font-bold mb-1 text-white group-hover:text-[#ff2d55] transition-colors">{{ $event->title ?? 'Unknown Event' }}</h3>
@@ -218,7 +223,6 @@
                             <span class="text-sm font-bold text-green-400">Rp {{ number_format($eticket->ticket->price ?? 0, 0, ',', '.') }}</span>
                         </div>
                         
-                        <!-- Info jika masih pending -->
                         @if($isPaymentPending)
                             <div class="mt-3 pt-2 border-t border-white/10">
                                 <p class="text-xs text-yellow-400 flex items-center gap-1">
@@ -229,7 +233,6 @@
                         @endif
                     </div>
                     
-                    <!-- Action Buttons -->
                     <div class="absolute bottom-4 right-4 flex gap-2">
                         @if(!$isPaymentPending)
                             <a href="{{ route('ticket.print', $eticket->ticket_code) }}" 
