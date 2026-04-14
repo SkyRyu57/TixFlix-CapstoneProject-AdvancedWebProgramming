@@ -22,14 +22,6 @@
 
         <h2 class="text-xl font-semibold mb-6 text-center text-slate-200">Buat Akun Baru</h2>
 
-        <!-- Tampilkan error dari session -->
-        @if(session('error'))
-            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <!-- Tampilkan error validasi dari controller -->
         @if ($errors->any())
             <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg">
                 <p class="font-bold text-sm">Gagal mendaftar:</p>
@@ -38,6 +30,12 @@
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg">
+                {{ session('error') }}
             </div>
         @endif
 

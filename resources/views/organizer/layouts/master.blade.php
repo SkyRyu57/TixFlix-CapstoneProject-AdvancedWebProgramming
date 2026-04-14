@@ -233,7 +233,7 @@
                             <li><a class="dropdown-item text-white" href="{{ route('profile') }}"><i class="fas fa-user me-2"></i> Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form action="{{ route('logout') }}" method="POST">
+                                <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit" class="dropdown-item text-white"><i class="fas fa-sign-out-alt me-2"></i> Keluar</button>
                                 </form>
