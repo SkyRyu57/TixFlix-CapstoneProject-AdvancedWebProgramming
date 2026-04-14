@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
@@ -29,67 +31,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
     
     // Forgot Password
-    Route::get('/forgot-password', function () {
-        return view('auth.forgot-password');
-    })->name('password.request');
-    
-    Route::post('/check-email', function (Request $request) {
-        $email = $request->email;
-        $user = \App\Models\User::where('email', $email)->first();
-        if ($user) {
-            return response()->json(['exists' => true, 'user_name' => $user->name, 'user_email' => $user->email]);
-        }
-        return response()->json(['exists' => false]);
-    })->name('check.email');
-    
-    Route::post('/create-reset-token', function (Request $request) {
-        $email = $request->email;
-        $user = \App\Models\User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Email tidak ditemukan']);
-        }
-        $token = Str::random(64);
-        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
-            ['email' => $email],
-            ['token' => $token, 'created_at' => now()]
-        );
-        $resetLink = url('/reset-password/' . $token . '?email=' . urlencode($email));
-        return response()->json(['success' => true, 'reset_link' => $resetLink, 'token' => $token]);
-    })->name('create.reset.token');
-    
-    Route::get('/reset-password/{token}', function ($token) {
-        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('token', $token)->first();
-        if (!$resetRecord) {
-            return redirect()->route('password.request')->with('error', 'Token tidak valid atau sudah kadaluarsa!');
-        }
-        if (now()->diffInMinutes($resetRecord->created_at) > 60) {
-            \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('token', $token)->delete();
-            return redirect()->route('password.request')->with('error', 'Link reset password sudah kadaluarsa!');
-        }
-        return view('auth.reset-password', ['token' => $token, 'email' => $resetRecord->email]);
-    })->name('password.reset');
-    
-    Route::post('/reset-password', function (Request $request) {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:6|confirmed',
-        ]);
-        $resetRecord = \Illuminate\Support\Facades\DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->where('token', $request->token)
-            ->first();
-        if (!$resetRecord) {
-            return back()->with('error', 'Token tidak valid!');
-        }
-        $user = \App\Models\User::where('email', $request->email)->first();
-        if ($user) {
-            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
-            $user->save();
-        }
-        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-        return redirect()->route('login')->with('success', 'Password berhasil direset!');
-    })->name('password.update');
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
 // ============================================

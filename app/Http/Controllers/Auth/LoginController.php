@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class LoginController extends Controller
 {
@@ -15,26 +16,31 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
+        // Cek apakah email terdaftar
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return back()->withErrors([
+                'email' => 'Email tidak terdaftar. Silakan daftar terlebih dahulu.',
+            ])->onlyInput('email');
+        }
+
+        // Cek password
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-
-            // REDIRECT ke /home agar sistem "Polisi Lalu Lintas" kita yang bekerja
             return redirect()->intended('/home');
         }
 
-        // Jika gagal, balikkan ke halaman login dengan pesan error
+        // Password salah
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'password' => 'Password yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 
-    // Menangani Logout
     public function logout(Request $request)
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
         return redirect('/login');
     }
 }
