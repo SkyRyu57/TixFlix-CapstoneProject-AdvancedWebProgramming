@@ -285,46 +285,14 @@ Route::middleware('auth')->group(function () {
             }
             
             $event = \App\Models\Event::findOrFail($eventId);
+            $orderId = 'ORD-' . strtoupper(Str::random(12)) . '-' . time() . '-' . rand(1000, 9999);
             
-            // Cek apakah sudah ada transaksi pending untuk user ini dengan event yang sama
-            $existingTransaction = \App\Models\Transaction::where('user_id', auth()->id())
-                ->where('status', 'pending')
-                ->where('created_at', '>=', now()->subMinutes(5))
-                ->first();
-            
-            if ($existingTransaction) {
-                $orderId = $existingTransaction->reference_number;
-                $transaction = $existingTransaction;
-            } else {
-                $orderId = 'ORD-' . strtoupper(Str::random(12)) . '-' . time() . '-' . rand(1000, 9999);
-                
-                // Buat transaksi baru dengan expires_at 5 menit
-                $transaction = \App\Models\Transaction::create([
-                    'user_id' => auth()->id(),
-                    'reference_number' => $orderId,
-                    'total_price' => $totalPrice,
-                    'status' => 'pending',
-                    'payment_method' => 'bank_transfer',
-                    'expires_at' => now()->addMinutes(5),
-                ]);
-                
-                // Simpan data tiket di session (atau bisa juga di tabel terpisah)
-                session(['payment_selected_tickets' => $selectedTickets]);
-                
-                // Kirim notifikasi ke customer
-                \App\Models\Notification::create([
-                    'user_id' => auth()->id(),
-                    'title' => '⏳ Segera Selesaikan Pembayaran',
-                    'message' => 'Anda memiliki waktu 5 menit untuk menyelesaikan pembayaran tiket ' . $event->title . '. Jangan sampai kadaluarsa!',
-                    'type' => 'warning',
-                    'link' => route('payment.page'),
-                    'is_read' => false,
-                ]);
-            }
-            
-            return view('customer.payment', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets', 'orderId', 'transaction'));
+            return view('customer.payment', compact('event', 'selectedTickets', 'totalPrice', 'totalTickets', 'orderId'));
         })->name('payment.page');
 
+        // ========================================
+        // CONFIRM PAYMENT (UPLOAD BUKTI)
+        // ========================================
         Route::post('/payment/confirm', function (Request $request) {
             try {
                 $request->validate([
@@ -336,44 +304,22 @@ Route::middleware('auth')->group(function () {
                 
                 $proofPath = $request->file('proof_image')->store('payment_proofs', 'public');
                 
-                // Cari transaksi berdasarkan reference_number
-                $transaction = \App\Models\Transaction::where('reference_number', $request->order_id)
-                    ->where('user_id', auth()->id())
-                    ->first();
+                $eventId = session('checkout_event_id');
+                $selectedTickets = session('checkout_selected_tickets', []);
+                $totalPrice = session('checkout_total_price', 0);
                 
-                if (!$transaction) {
-                    return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan.']);
+                if (empty($selectedTickets)) {
+                    return response()->json(['success' => false, 'message' => 'Data tiket tidak ditemukan.']);
                 }
                 
-                // Cek apakah transaksi sudah kadaluarsa
-                if ($transaction->expires_at && now()->greaterThan($transaction->expires_at)) {
-                    $transaction->update(['status' => 'expired']);
-                    return response()->json(['success' => false, 'message' => 'Waktu pembayaran telah habis. Silakan pesan ulang.']);
-                }
+                $transaction = \App\Models\Transaction::create([
+                    'user_id' => auth()->id(),
+                    'reference_number' => $request->order_id,
+                    'total_price' => $totalPrice,
+                    'status' => 'pending',
+                    'payment_method' => 'bank_transfer',
+                ]);
                 
-                // Ambil data tiket dari session (atau dari relasi jika sudah ada)
-                $selectedTickets = session('payment_selected_tickets', []);
-                
-                // Jika transaksi belum memiliki e-tickets, buat
-                $existingEtickets = \App\Models\Eticket::where('transaction_id', $transaction->id)->count();
-                if ($existingEtickets == 0 && !empty($selectedTickets)) {
-                    foreach ($selectedTickets as $ticketData) {
-                        $ticket = \App\Models\Ticket::find($ticketData['ticket']['id']);
-                        if ($ticket) {
-                            for ($i = 0; $i < $ticketData['quantity']; $i++) {
-                                \App\Models\Eticket::create([
-                                    'transaction_id' => $transaction->id,
-                                    'ticket_id' => $ticket->id,
-                                    'user_id' => auth()->id(),
-                                    'ticket_code' => 'TIX-' . strtoupper(Str::random(8)),
-                                    'is_scanned' => false,
-                                ]);
-                            }
-                        }
-                    }
-                }
-                
-                // Simpan bukti pembayaran
                 \App\Models\Payment::create([
                     'user_id' => auth()->id(),
                     'transaction_id' => $transaction->id,
@@ -385,7 +331,21 @@ Route::middleware('auth')->group(function () {
                     'expired_at' => now()->addHours(24),
                 ]);
                 
-                // Jangan ubah status transaksi, tetap pending sampai admin approve
+                // Buat eticket dengan status pending
+                foreach ($selectedTickets as $ticketData) {
+                    $ticket = \App\Models\Ticket::find($ticketData['ticket']['id']);
+                    if ($ticket) {
+                        for ($i = 0; $i < $ticketData['quantity']; $i++) {
+                            \App\Models\Eticket::create([
+                                'transaction_id' => $transaction->id,
+                                'ticket_id' => $ticket->id,
+                                'user_id' => auth()->id(),
+                                'ticket_code' => 'TIX-' . strtoupper(Str::random(8)),
+                                'is_scanned' => false,
+                            ]);
+                        }
+                    }
+                }
                 
                 \App\Models\Notification::create([
                     'user_id' => auth()->id(),
@@ -396,7 +356,7 @@ Route::middleware('auth')->group(function () {
                     'is_read' => false,
                 ]);
                 
-                session()->forget(['checkout_event_id', 'checkout_selected_tickets', 'checkout_total_price', 'checkout_total_tickets', 'payment_selected_tickets']);
+                session()->forget(['checkout_event_id', 'checkout_selected_tickets', 'checkout_total_price', 'checkout_total_tickets']);
                 
                 return response()->json(['success' => true, 'message' => 'Bukti pembayaran terkirim!']);
                 
@@ -405,17 +365,42 @@ Route::middleware('auth')->group(function () {
             }
         })->name('payment.confirm');
 
+        // ========================================
+        // VERIFIKASI PEMBAYARAN (TESTING)
+        // ========================================
         Route::get('/verify-payment/{transactionId}', function ($transactionId) {
             $transaction = \App\Models\Transaction::findOrFail($transactionId);
-            $transaction->update(['status' => 'paid', 'paid_at' => now()]);
+            
+            $transaction->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+            
             $payment = \App\Models\Payment::where('transaction_id', $transactionId)->first();
-            if ($payment) $payment->update(['status' => 'verified', 'verified_at' => now()]);
+            if ($payment) {
+                $payment->update([
+                    'status' => 'verified',
+                    'verified_at' => now(),
+                ]);
+            }
+            
             $etickets = \App\Models\Eticket::where('transaction_id', $transactionId)->get();
             foreach ($etickets as $eticket) {
                 $ticket = \App\Models\Ticket::find($eticket->ticket_id);
-                if ($ticket) $ticket->decrement('stock');
+                if ($ticket) {
+                    $ticket->decrement('stock');
+                }
             }
-            \App\Models\Notification::create(['user_id' => $transaction->user_id, 'title' => 'Pembayaran Diverifikasi! ✅', 'message' => 'Pembayaran Anda telah diverifikasi. QR Code tiket sudah aktif!', 'type' => 'success', 'link' => route('my-tickets'), 'is_read' => false]);
+            
+            \App\Models\Notification::create([
+                'user_id' => $transaction->user_id,
+                'title' => 'Pembayaran Diverifikasi! ✅',
+                'message' => 'Pembayaran Anda telah diverifikasi. QR Code tiket sudah aktif!',
+                'type' => 'success',
+                'link' => route('my-tickets'),
+                'is_read' => false,
+            ]);
+            
             return redirect()->route('my-tickets')->with('success', 'Pembayaran berhasil diverifikasi!');
         })->name('payment.verify');
 
