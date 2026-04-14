@@ -24,10 +24,9 @@
         .stat-card { transition: all 0.3s ease; }
         .stat-card:hover { transform: translateY(-5px); }
         
-        /* Sidebar responsive */
+        /* SIDEBAR - FIXED: TAMPIL DI DESKTOP */
         .sidebar {
             transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
             position: fixed;
             top: 0;
             left: 0;
@@ -35,21 +34,38 @@
             z-index: 1030;
             width: 280px;
         }
-        .sidebar.open {
-            transform: translateX(0);
+        
+        /* Desktop: sidebar tampil */
+        @media (min-width: 1024px) {
+            .sidebar {
+                transform: translateX(0) !important;
+            }
+            .sidebar-overlay {
+                display: none !important;
+            }
         }
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1020;
-        }
-        .sidebar-overlay.show {
-            display: block;
+        
+        /* Mobile: sidebar tersembunyi, muncul saat open */
+        @media (max-width: 1023px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1020;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
         }
         
         /* Modal Notifikasi & Profile */

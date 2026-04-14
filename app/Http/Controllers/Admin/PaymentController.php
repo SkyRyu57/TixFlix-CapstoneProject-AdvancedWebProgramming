@@ -4,67 +4,105 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use App\Models\Payment;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::with('user')
+        // Perbaikan: ambil dari tabel payments, bukan transactions
+        $payments = Payment::with(['user', 'transaction'])
             ->where('status', 'pending')
-            ->whereNotNull('payment_proof')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
-        return view('admin.payments.index', compact('transactions'));
+        
+        return view('admin.payments.index', compact('payments'));
     }
 
     public function show(Transaction $transaction)
     {
-        return view('admin.payments.show', compact('transaction'));
+        $payment = Payment::where('transaction_id', $transaction->id)->firstOrFail();
+        return view('admin.payments.show', compact('transaction', 'payment'));
     }
 
     public function approve(Transaction $transaction)
     {
-        $transaction->status = 'paid';
-        $transaction->paid_at = now();
-        $transaction->save();
-
-        // Update e-tickets: set issued_at jika belum
-        foreach ($transaction->etickets as $eticket) {
-            if (!$eticket->issued_at) {
-                $eticket->issued_at = now();
-                $eticket->save();
+        DB::beginTransaction();
+        try {
+            // Update transaction
+            $transaction->update([
+                'status' => 'paid',
+                'paid_at' => now()
+            ]);
+            
+            // Update payment
+            $payment = Payment::where('transaction_id', $transaction->id)->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'verified',
+                    'verified_at' => now()
+                ]);
             }
+            
+            // Update stock tickets
+            foreach ($transaction->etickets as $eticket) {
+                $ticket = \App\Models\Ticket::find($eticket->ticket_id);
+                if ($ticket) {
+                    $ticket->decrement('stock');
+                }
+            }
+            
+            // Send notification to customer
+            Notification::create([
+                'user_id' => $transaction->user_id,
+                'title' => 'Pembayaran Diverifikasi! ✅',
+                'message' => 'Pembayaran Anda telah diverifikasi. Tiket Anda sudah aktif!',
+                'type' => 'success',
+                'link' => route('my-tickets'),
+                'is_read' => false,
+            ]);
+            
+            DB::commit();
+            return redirect()->route('admin.payments.index')->with('success', 'Pembayaran berhasil diverifikasi!');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-
-        // Notifikasi ke customer
-        Notification::create([
-            'user_id' => $transaction->user_id,
-            'title' => 'Pembayaran Dikonfirmasi',
-            'message' => 'Pembayaran Anda telah dikonfirmasi. Tiket Anda sudah dapat diunduh.',
-            'type' => 'success',
-            'link' => route('my-tickets'),
-            'is_read' => false,
-        ]);
-
-        return redirect()->route('admin.payments.index')->with('success', 'Pembayaran disetujui dan e-ticket diterbitkan.');
     }
 
     public function reject(Transaction $transaction)
     {
-        $transaction->status = 'failed';
-        $transaction->save();
-
-        Notification::create([
-            'user_id' => $transaction->user_id,
-            'title' => 'Pembayaran Ditolak',
-            'message' => 'Pembayaran Anda ditolak. Silakan hubungi admin.',
-            'type' => 'error',
-            'link' => route('dashboard'),
-            'is_read' => false,
-        ]);
-
-        return redirect()->route('admin.payments.index')->with('success', 'Pembayaran ditolak.');
+        DB::beginTransaction();
+        try {
+            // Update transaction
+            $transaction->update(['status' => 'failed']);
+            
+            // Update payment
+            $payment = Payment::where('transaction_id', $transaction->id)->first();
+            if ($payment) {
+                $payment->update(['status' => 'rejected']);
+            }
+            
+            // Send notification to customer
+            Notification::create([
+                'user_id' => $transaction->user_id,
+                'title' => 'Pembayaran Ditolak! ❌',
+                'message' => 'Moh maaf, pembayaran Anda ditolak. Silakan upload ulang bukti pembayaran yang valid.',
+                'type' => 'error',
+                'link' => route('payment.page'),
+                'is_read' => false,
+            ]);
+            
+            DB::commit();
+            return redirect()->route('admin.payments.index')->with('success', 'Pembayaran ditolak!');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

@@ -6,57 +6,67 @@
 <div class="flex justify-between items-center mb-6">
     <div>
         <h1 class="text-3xl font-bold">Konfirmasi Pembayaran</h1>
-        <p class="text-gray-400 mt-1">Daftar transaksi pending yang sudah upload bukti (terlama lebih dulu)</p>
+        <p class="text-gray-400 mt-1">Verifikasi bukti pembayaran dari customer</p>
     </div>
 </div>
 
-<div class="grid grid-cols-1 gap-6">
-    @forelse($transactions as $tx)
-    @php
-        $event = $tx->etickets->first()?->ticket?->event;
-    @endphp
-    <div class="glass-card rounded-2xl p-6">
-        <div class="flex flex-col lg:flex-row gap-6">
-            <!-- Info Transaksi -->
-            <div class="flex-1">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 class="text-xl font-bold">{{ $event->title ?? 'Event tidak diketahui' }}</h2>
-                        <p class="text-sm text-gray-400">{{ $event->start_date ? \Carbon\Carbon::parse($event->start_date)->format('d M Y') : '-' }}</p>
-                    </div>
-                    <span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">Pending</span>
-                </div>
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div><p class="text-xs text-gray-400">Referensi</p><p class="font-mono text-sm">{{ $tx->reference_number }}</p></div>
-                    <div><p class="text-xs text-gray-400">Total</p><p class="font-semibold">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</p></div>
-                    <div><p class="text-xs text-gray-400">Customer</p><p class="text-sm">{{ $tx->user->name ?? '-' }}</p><p class="text-xs text-gray-500">{{ $tx->user->email ?? '-' }}</p></div>
-                    <div><p class="text-xs text-gray-400">Tgl Transaksi</p><p class="text-sm">{{ $tx->created_at->format('d M Y H:i') }}</p></div>
-                </div>
-                @if($tx->payment_notes)
-                <div class="mb-4"><p class="text-xs text-gray-400">Catatan</p><p class="text-sm bg-black/30 p-2 rounded">{{ $tx->payment_notes }}</p></div>
-                @endif
-                <div class="flex gap-3">
-                    <form action="{{ route('admin.payments.approve', $tx) }}" method="POST">@csrf<button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Setujui</button></form>
-                    <form action="{{ route('admin.payments.reject', $tx) }}" method="POST">@csrf<button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">Tolak</button></form>
-                    <a href="{{ route('admin.payments.show', $tx) }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Detail</a>
-                </div>
-            </div>
-            <!-- Bukti Pembayaran -->
-            <div class="w-full lg:w-80">
-                @if($tx->payment_proof)
-                <div class="bg-black/30 rounded-lg p-2 text-center">
-                    <img src="{{ asset('storage/' . $tx->payment_proof) }}" class="max-h-48 mx-auto rounded cursor-pointer" onclick="window.open(this.src)">
-                    <p class="text-xs text-gray-500 mt-2">Klik gambar untuk memperbesar</p>
-                </div>
-                @else
-                <div class="bg-black/30 rounded-lg p-4 text-center"><i data-lucide="image" class="w-8 h-8 mx-auto mb-2"></i><p class="text-sm">Tidak ada bukti</p></div>
-                @endif
-            </div>
-        </div>
+<div class="glass-card rounded-2xl p-6">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="border-b border-white/10">
+                <tr class="text-left text-gray-400">
+                    <th class="p-3">ID</th>
+                    <th class="p-3">Order ID</th>
+                    <th class="p-3">Customer</th>
+                    <th class="p-3">Jumlah</th>
+                    <th class="p-3">Bukti</th>
+                    <th class="p-3">Tanggal</th>
+                    <th class="p-3">Aksi</th>
+                 </tr>
+            </thead>
+            <tbody>
+                @forelse($payments as $payment)
+                <tr class="border-b border-white/5">
+                    <td class="p-3">{{ $payment->id }}</td>
+                    <td class="p-3 font-mono text-sm">{{ $payment->order_id }}</td>
+                    <td class="p-3">
+                        {{ $payment->user->name ?? '-' }}<br>
+                        <small class="text-gray-500">{{ $payment->user->email ?? '-' }}</small>
+                    </td>
+                    <td class="p-3">Rp {{ number_format($payment->amount, 0, ',', '.') }}</td>
+                    <td class="p-3">
+                        <a href="{{ Storage::url($payment->proof_image) }}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                            <i data-lucide="eye" class="w-5 h-5 inline"></i> Lihat
+                        </a>
+                    </td>
+                    <td class="p-3">{{ $payment->created_at->format('d M Y H:i') }}</td>
+                    <td class="p-3">
+                        <div class="flex gap-2">
+                            <form action="{{ route('admin.payments.approve', $payment->transaction_id) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white px-3 py-1 rounded-md text-sm transition">
+                                    Verifikasi
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.payments.reject', $payment->transaction_id) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white px-3 py-1 rounded-md text-sm transition">
+                                    Tolak
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="p-3 text-center text-gray-500">Tidak ada pembayaran yang menunggu konfirmasi</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-    @empty
-    <div class="glass-card rounded-2xl p-6 text-center"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3"></i><p>Tidak ada transaksi yang perlu dikonfirmasi</p></div>
-    @endforelse
+    <div class="mt-4">
+        {{ $payments->links() }}
+    </div>
 </div>
-<div class="mt-6">{{ $transactions->links() }}</div>
 @endsection

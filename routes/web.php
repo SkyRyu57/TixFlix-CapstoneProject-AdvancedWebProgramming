@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 // ============================================
 // 1. HALAMAN UTAMA
@@ -84,7 +86,7 @@ Route::middleware('guest')->group(function () {
         }
         $user = \App\Models\User::where('email', $request->email)->first();
         if ($user) {
-            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            $user->password = Hash::make($request->password);
             $user->save();
         }
         \Illuminate\Support\Facades\DB::table('password_reset_tokens')->where('email', $request->email)->delete();
@@ -243,10 +245,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}/edit', [App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
         Route::post('/users/{user}/toggle-suspend', [App\Http\Controllers\Admin\UserController::class, 'toggleSuspend'])->name('users.toggle-suspend');
+        
+        // ==================== PERBAIKAN PAYMENTS ====================
+        // Menggunakan PaymentController dengan method yang benar
         Route::get('/payments', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
-        Route::get('/payments/{transaction}', [App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
-        Route::post('/payments/{transaction}/approve', [App\Http\Controllers\Admin\PaymentController::class, 'approve'])->name('payments.approve');
-        Route::post('/payments/{transaction}/reject', [App\Http\Controllers\Admin\PaymentController::class, 'reject'])->name('payments.reject');
+        Route::get('/payments/{payment}', [App\Http\Controllers\Admin\PaymentController::class, 'show'])->name('payments.show');
+        Route::post('/payments/{payment}/approve', [App\Http\Controllers\Admin\PaymentController::class, 'approve'])->name('payments.approve');
+        Route::post('/payments/{payment}/reject', [App\Http\Controllers\Admin\PaymentController::class, 'reject'])->name('payments.reject');
     });
 
     // ========================================

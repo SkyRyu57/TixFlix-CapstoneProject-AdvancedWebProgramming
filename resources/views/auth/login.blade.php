@@ -36,13 +36,47 @@
             </div>
         @endif
 
+        {{-- NOTIFIKASI KHUSUS: AKUN TIDAK DITEMUKAN --}}
+        @if(session('account_not_found'))
+            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg text-sm flex items-start gap-3">
+                <i class="bi bi-person-x text-lg mt-0.5"></i>
+                <div>
+                    <strong class="font-semibold">Akun Tidak Ditemukan!</strong><br>
+                    {{ session('account_not_found') }}
+                </div>
+            </div>
+        @endif
+
+        {{-- NOTIFIKASI KHUSUS: PASSWORD SALAH --}}
+        @if(session('wrong_password'))
+            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg text-sm flex items-start gap-3">
+                <i class="bi bi-shield-lock text-lg mt-0.5"></i>
+                <div>
+                    <strong class="font-semibold">Password Salah!</strong><br>
+                    {{ session('wrong_password') }}
+                </div>
+            </div>
+        @endif
+
+        {{-- NOTIFIKASI DARI VALIDASI LARAVEL (email required, dll) --}}
+        @if($errors->any())
+            <div class="bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 mb-6 rounded-r-lg text-sm">
+                @foreach($errors->all() as $error)
+                    <div class="flex items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill text-sm mt-0.5"></i>
+                        <span>{{ $error }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
         @if(session('info'))
             <div class="bg-blue-500/10 border-l-4 border-blue-500 text-blue-400 p-4 mb-6 rounded-r-lg text-sm">
                 {{ session('info') }}
             </div>
         @endif
 
-        <form action="/login" method="POST">
+        <form action="{{ route('login.post') }}" method="POST">
             @csrf
 
             <div class="mb-5">
@@ -51,8 +85,11 @@
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
                         <i class="bi bi-envelope"></i>
                     </span>
-                    <input type="email" name="email" class="w-full pl-11 pr-4 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="email@email.com" required>
+                    <input type="email" name="email" value="{{ old('email') }}" class="w-full pl-11 pr-4 py-3 bg-[#0B0F19] text-white border {{ $errors->has('email') ? 'border-red-500' : 'border-slate-700' }} rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="email@email.com" required>
                 </div>
+                @error('email')
+                    <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="mb-5">
@@ -61,16 +98,19 @@
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">
                         <i class="bi bi-lock"></i>
                     </span>
-                    <input type="password" name="password" id="loginPassword" class="w-full pl-11 pr-12 py-3 bg-[#0B0F19] text-white border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="Password kamu" required>
+                    <input type="password" name="password" id="loginPassword" class="w-full pl-11 pr-12 py-3 bg-[#0B0F19] text-white border {{ $errors->has('password') ? 'border-red-500' : 'border-slate-700' }} rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors" placeholder="Password kamu" required>
                     <button type="button" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 hover:text-white transition-colors" onclick="toggleLoginPassword()">
                         <i class="bi bi-eye" id="loginEye"></i>
                     </button>
                 </div>
+                @error('password')
+                    <p class="text-red-400 text-xs mt-1">{{ $message }}</p>
+                @enderror
             </div>
 
             <!-- Forgot Password Link -->
             <div class="text-right mb-6">
-                <a href="/forgot-password" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">Lupa password?</a>
+                <a href="{{ route('password.request') }}" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">Lupa password?</a>
             </div>
 
             <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition duration-300 flex justify-center items-center gap-2">
@@ -80,7 +120,7 @@
         </form>
 
         <div class="mt-6 text-center text-sm text-slate-400">
-            Belum punya akun? <a href="/register" class="text-indigo-400 hover:text-indigo-300 font-medium">Register di sini</a>
+            Belum punya akun? <a href="{{ route('register') }}" class="text-indigo-400 hover:text-indigo-300 font-medium">Register di sini</a>
         </div>
 
     </div>
